@@ -10,7 +10,9 @@ import com.opero.api.entity.User;
 import com.opero.api.repository.DepartmentRepository;
 import com.opero.api.repository.RoleRepository;
 import com.opero.api.repository.UserRepository;
+import com.opero.api.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -24,10 +26,10 @@ import java.util.Optional;
  * - Valida datos, hashea passwords, convierte entidades a DTOs
  * - Interactúa con los Repositories para acceder a la base de datos
  *
- * Nota sobre seguridad:
- * - Por ahora el password se guarda en texto plano (NO HACER EN PRODUCCIÓN)
- * - TODO: Implementar BCryptPasswordEncoder para hashear passwords
- * - TODO: Implementar JWT (JSON Web Tokens) para autenticación real
+ * Seguridad implementada:
+ * - BCrypt: Las contraseñas se hashean con BCrypt antes de guardarlas
+ * - JWT: Se generan tokens JWT reales para autenticación
+ * - Validación: Se comparan hashes en lugar de texto plano
  */
 @Service
 public class AuthService {
@@ -42,17 +44,24 @@ public class AuthService {
     @Autowired
     private DepartmentRepository departmentRepository;
 
+    // Inyección de utilidades de seguridad
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
     /**
      * Login: Autentica un usuario existente.
      *
      * ¿Qué hace este método?
      * - Busca el usuario por email en la base de datos
-     * - Verifica que la contraseña coincida (por ahora texto plano)
-     * - Si es correcto, devuelve un token simulado y los datos del usuario
+     * - Verifica que la contraseña coincida usando BCrypt
+     * - Si es correcto, devuelve un token JWT real y los datos del usuario
      * - Si falla, lanza una excepción con mensaje de error
      *
      * @param request Datos de login (email y password)
-     * @return AuthResponse con token, datos del usuario y mensaje
+     * @return AuthResponse con token JWT, datos del usuario y mensaje
      * @throws RuntimeException si el email no existe o la contraseña es incorrecta
      *
      * Usado por: POST /api/auth/login
@@ -68,18 +77,23 @@ public class AuthService {
 
         User user = userOptional.get();
 
-        // 3. Validar la contraseña (por ahora comparación directa, TODO: usar BCrypt)
-        if (!user.getPasswordHash().equals(request.getPassword())) {
+        // 3. Validar la contraseña usando BCrypt
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new RuntimeException("Contraseña incorrecta");
         }
 
-        // 4. Generar token simulado (TODO: implementar JWT real)
-        String token = "token-simulado-" + user.getId();
+        // 4. Generar token JWT real con los datos del usuario
+        String token = jwtUtil.generateToken(
+            user.getEmailUade(),
+            user.getId(),
+            user.getRole().getId(),
+            user.getRole().getRoleName()
+        );
 
         // 5. Convertir User entidad a UserResponse DTO
         UserResponse userResponse = convertToUserResponse(user);
 
-        // 6. Retornar respuesta exitosa
+        // 6. Retornar respuesta exitosa con token JWT
         return new AuthResponse(token, userResponse, "Login exitoso");
     }
 
@@ -90,11 +104,12 @@ public class AuthService {
      * - Valida que el email no esté ya registrado
      * - Valida que el rol exista
      * - Valida que el departamento exista (si se proporciona)
+     * - Hashea la contraseña con BCrypt antes de guardarla
      * - Crea el nuevo usuario en la base de datos
-     * - Devuelve un token simulado y los datos del nuevo usuario
+     * - Devuelve un token JWT real y los datos del nuevo usuario
      *
      * @param request Datos de registro (fullName, email, password, roleId, departmentId)
-     * @return AuthResponse con token, datos del usuario y mensaje
+     * @return AuthResponse con token JWT, datos del usuario y mensaje
      * @throws RuntimeException si el email ya existe, el rol no existe, o el departamento no existe
      *
      * Usado por: POST /api/auth/register
@@ -120,21 +135,26 @@ public class AuthService {
         User newUser = new User();
         newUser.setFullName(request.getFullName());
         newUser.setEmailUade(request.getEmailUade());
-        // TODO: Hashear el password con BCrypt antes de guardarlo
-        newUser.setPasswordHash(request.getPassword()); // Por ahora texto plano (NO HACER EN PRODUCCIÓN)
+        // Hashear la contraseña con BCrypt antes de guardarla
+        newUser.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         newUser.setRole(role);
         newUser.setDepartment(department);
 
         // 5. Guardar el usuario en la base de datos
         User savedUser = userRepository.save(newUser);
 
-        // 6. Generar token simulado (TODO: implementar JWT real)
-        String token = "token-simulado-" + savedUser.getId();
+        // 6. Generar token JWT real con los datos del usuario
+        String token = jwtUtil.generateToken(
+            savedUser.getEmailUade(),
+            savedUser.getId(),
+            savedUser.getRole().getId(),
+            savedUser.getRole().getRoleName()
+        );
 
         // 7. Convertir User entidad a UserResponse DTO
         UserResponse userResponse = convertToUserResponse(savedUser);
 
-        // 8. Retornar respuesta exitosa
+        // 8. Retornar respuesta exitosa con token JWT
         return new AuthResponse(token, userResponse, "Registro exitoso");
     }
 

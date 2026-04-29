@@ -23,7 +23,8 @@ public class User {
     private String passwordHash;
 
     // Relación: Muchos usuarios pueden tener un mismo rol
-    @ManyToOne(fetch = FetchType.LAZY)
+    // EAGER porque el filtro JWT siempre necesita el role para autenticación
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 

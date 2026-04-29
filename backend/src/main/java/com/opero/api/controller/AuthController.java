@@ -14,6 +14,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
  * - POST /api/auth/login: Iniciar sesión
  * - POST /api/auth/register: Registrar nuevo usuario
  * - GET /api/auth/me: Obtener datos del usuario autenticado
+ * - POST /api/auth/logout: Cerrar sesión
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -173,22 +176,24 @@ public class AuthController {
      * GET /api/auth/me - Obtener datos del usuario autenticado
      *
      * ¿Qué hace este endpoint?
-     * - Recibe el email del usuario autenticado como parámetro de query
+     * - Extrae el email del usuario desde el token JWT automáticamente
      * - Busca los datos del usuario en la base de datos
      * - Retorna la información del usuario sin datos sensibles (sin password)
      *
-     * Nota: En una implementación real con JWT, el email vendría del token
-     * decodificado en lugar de un parámetro de query.
+     * Nota: El usuario se extrae del contexto de Spring Security que fue
+     * configurado por el JwtAuthenticationFilter. Ya no se requiere pasar
+     * el email como parámetro.
      *
-     * @param emailUade Email del usuario autenticado (query parameter)
+     * Header requerido: Authorization: Bearer <token-jwt>
+     *
      * @return UserResponse con los datos del usuario
      */
     @GetMapping("/me")
     @Operation(
         summary = "Obtener datos del usuario autenticado",
         description = "Retorna la información del usuario actualmente autenticado. " +
-                      "Por ahora recibe el email como parámetro de query. " +
-                      "En una implementación real con JWT, el email se extraería del token en el header Authorization."
+                      "El email se extrae automáticamente del token JWT en el header Authorization. " +
+                      "Header requerido: Authorization: Bearer <token-jwt>"
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -215,15 +220,12 @@ public class AuthController {
             content = @Content
         )
     })
-    public ResponseEntity<?> me(
-        @io.swagger.v3.oas.annotations.Parameter(
-            description = "Email institucional del usuario autenticado (ej: juan.perez@uade.edu.ar)",
-            required = true,
-            example = "juan.perez@uade.edu.ar"
-        )
-        @RequestParam String emailUade
-    ) {
+    public ResponseEntity<?> me() {
         try {
+            // Obtener el usuario autenticado desde el contexto de Spring Security
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String emailUade = authentication.getName(); // El "name" es el email (username)
+
             // Delegar la lógica al servicio
             UserResponse response = authService.me(emailUade);
             // Retornar respuesta exitosa con código 200 OK
@@ -231,6 +233,87 @@ public class AuthController {
         } catch (RuntimeException e) {
             // Si falla, retornar error 404 Not Found con el mensaje de error
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    /**
+     * POST /api/auth/logout - Cerrar sesión
+     *
+     * ¿Qué hace este endpoint?
+     * - Invalida la sesión actual del usuario
+     * - Con JWT, el logout es principalmente del lado del cliente
+     * - El cliente debe eliminar el token almacenado localmente
+     * - Este endpoint retorna confirmación de logout exitoso
+     *
+     * ¿Cómo funciona el logout con JWT?
+     * - JWT es stateless (sin estado en el servidor)
+     * - El servidor NO guarda una lista de sesiones activas
+     * - Por lo tanto, el logout real ocurre cuando el cliente elimina el token
+     * - Este endpoint sirve para:
+     *   1. Confirmar al cliente que puede borrar el token
+     *   2. (Opcional) Registrar el evento de logout para auditoría
+     *   3. (Opcional) Agregar el token a una blacklist (implementación avanzada)
+     *
+     * Implementación avanzada (opcional):
+     * - Mantener una blacklist de tokens en Redis o base de datos
+     * - Modificar JwtAuthenticationFilter para verificar blacklist
+     * - Útil para invalidar tokens antes de que expiren naturalmente
+     *
+     * @return Mensaje de confirmación de logout exitoso
+     */
+    @PostMapping("/logout")
+    @Operation(
+        summary = "Cerrar sesión (logout)",
+        description = "Cierra la sesión del usuario autenticado. " +
+                      "Con JWT, el logout es principalmente del lado del cliente: " +
+                      "el cliente debe eliminar el token almacenado (localStorage, AsyncStorage, etc.). " +
+                      "Este endpoint confirma que el logout fue procesado correctamente. " +
+                      "El token seguirá siendo técnicamente válido hasta que expire, a menos que se implemente una blacklist."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Logout exitoso - El cliente debe eliminar el token almacenado",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = String.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "No autenticado - Token inválido o ya expirado",
+            content = @Content
+        )
+    })
+    public ResponseEntity<?> logout() {
+        try {
+            // Obtener el usuario autenticado para logging/auditoría
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String emailUade = authentication.getName();
+
+            // TODO (Opcional): Implementar blacklist de tokens
+            // 1. Obtener el token JWT del header Authorization
+            // 2. Agregar el token a una blacklist en Redis o base de datos
+            // 3. Modificar JwtAuthenticationFilter para verificar la blacklist
+            // Ejemplo:
+            // String token = extractTokenFromRequest(request);
+            // tokenBlacklistService.addToBlacklist(token);
+
+            // TODO (Opcional): Registrar evento de logout para auditoría
+            // auditService.logLogout(emailUade);
+
+            // Limpiar el contexto de seguridad (opcional, se limpia automáticamente al finalizar el request)
+            SecurityContextHolder.clearContext();
+
+            // Retornar confirmación de logout exitoso
+            return ResponseEntity.ok()
+                    .body(new java.util.HashMap<String, String>() {{
+                        put("message", "Logout exitoso. Por favor, elimina el token del almacenamiento local.");
+                        put("email", emailUade);
+                    }});
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Error al cerrar sesión: " + e.getMessage());
         }
     }
 }

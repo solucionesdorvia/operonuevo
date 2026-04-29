@@ -2,6 +2,7 @@ package com.opero.api.controller;
 
 import com.opero.api.dto.UpdateUserRequest;
 import com.opero.api.dto.UserResponse;
+import com.opero.api.security.SecurityUtil;
 import com.opero.api.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -9,7 +10,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,8 +48,8 @@ public class UserController {
      *
      * ¿Qué hace este endpoint?
      * - Retorna la información del usuario que está actualmente autenticado
-     * - TODO: Obtener el userId desde el token JWT (por ahora se simula)
-     * - No requiere parámetros porque usa la sesión del usuario
+     * - Extrae el email del token JWT automáticamente
+     * - No requiere parámetros porque usa el contexto de Spring Security
      *
      * Usado por: Perfil de usuario en el frontend
      *
@@ -55,7 +59,7 @@ public class UserController {
     @Operation(
             summary = "Obtener perfil del usuario autenticado",
             description = "Retorna la información del usuario que está actualmente autenticado. " +
-                    "TODO: El userId debería extraerse del token JWT."
+                    "El email se extrae automáticamente del token JWT."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Perfil obtenido exitosamente"),
@@ -63,11 +67,11 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
     })
     public ResponseEntity<UserResponse> getMyProfile() {
-        // TODO: Extraer userId del token JWT en lugar de hardcodear
-        // Por ahora simulamos que el usuario autenticado es el ID 1
-        Integer authenticatedUserId = 1;
+        // Obtener el email del usuario autenticado desde el contexto de Spring Security
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
 
-        UserResponse user = userService.getUserById(authenticatedUserId);
+        UserResponse user = userService.getUserByEmail(email);
         return ResponseEntity.ok(user);
     }
 
@@ -78,7 +82,7 @@ public class UserController {
      * - Permite al usuario actualizar su propio perfil
      * - Solo puede modificar: nombre, email, password
      * - NO puede modificar: roleId ni departmentId (solo admins)
-     * - TODO: Validar que el usuario no intente cambiar roleId/departmentId
+     * - Valida que el request no intente cambiar rol o departamento
      *
      * Usado por: Edición de perfil en el frontend
      *
@@ -93,18 +97,21 @@ public class UserController {
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Perfil actualizado exitosamente"),
-            @ApiResponse(responseCode = "400", description = "Datos inválidos (ej: email duplicado)"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (ej: email duplicado, intento de cambiar rol)"),
             @ApiResponse(responseCode = "401", description = "No autenticado"),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
     })
-    public ResponseEntity<UserResponse> updateMyProfile(@RequestBody UpdateUserRequest request) {
-        // TODO: Extraer userId del token JWT
-        Integer authenticatedUserId = 1;
+    public ResponseEntity<?> updateMyProfile(@RequestBody UpdateUserRequest request) {
+        // Validar que el usuario no intente cambiar roleId ni departmentId
+        if (request.getRoleId() != null || request.getDepartmentId() != null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Los usuarios no pueden cambiar su rol o departamento");
+        }
 
-        // TODO: Validar que request no tenga roleId ni departmentId
-        // Los usuarios normales no deberían poder cambiar estos campos
+        // Obtener el email del usuario autenticado
+        String email = SecurityUtil.getCurrentUserEmail();
 
-        UserResponse updatedUser = userService.updateUser(authenticatedUserId, request);
+        UserResponse updatedUser = userService.updateUserByEmail(email, request);
         return ResponseEntity.ok(updatedUser);
     }
 

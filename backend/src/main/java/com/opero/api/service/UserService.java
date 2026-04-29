@@ -9,6 +9,7 @@ import com.opero.api.repository.DepartmentRepository;
 import com.opero.api.repository.RoleRepository;
 import com.opero.api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -35,6 +36,9 @@ public class UserService {
 
     @Autowired
     private DepartmentRepository departmentRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     /**
      * Obtener un usuario por su ID.
@@ -151,9 +155,10 @@ public class UserService {
             user.setEmailUade(request.getEmailUade());
         }
 
-        // 4. Actualizar password si se proporcionó (TODO: hashear con BCrypt)
-        if (request.getPassword() != null) {
-            user.setPasswordHash(request.getPassword()); // Por ahora texto plano
+        // 4. Actualizar password si se proporcionó
+        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+            // Hashear la nueva contraseña con BCrypt
+            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         }
 
         // 5. Actualizar rol si se proporcionó
@@ -224,6 +229,76 @@ public class UserService {
 
         // 4. Si pasa todas las validaciones, eliminar el usuario
         userRepository.deleteById(id);
+    }
+
+    /**
+     * Obtener un usuario por su email.
+     *
+     * ¿Qué hace este método?
+     * - Busca un usuario específico en la base de datos por su email
+     * - Convierte la entidad User a UserResponse DTO
+     * - Lanza excepción si el usuario no existe
+     *
+     * @param email Email del usuario a buscar
+     * @return UserResponse con la información del usuario
+     * @throws RuntimeException si el usuario no existe
+     *
+     * Usado por: GET /api/users/me
+     */
+    public UserResponse getUserByEmail(String email) {
+        // Buscar usuario por email
+        User user = userRepository.findByEmailUade(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con email: " + email));
+
+        // Convertir a DTO y retornar
+        return convertToUserResponse(user);
+    }
+
+    /**
+     * Actualizar un usuario por su email (para actualizar propio perfil).
+     *
+     * ¿Qué hace este método?
+     * - Busca el usuario por email
+     * - Actualiza solo los campos proporcionados que no sean null
+     * - Hashea la nueva contraseña si se proporciona
+     * - Valida que el nuevo email no esté duplicado
+     * - Guarda los cambios en la base de datos
+     *
+     * @param email Email del usuario a actualizar
+     * @param request Datos de actualización
+     * @return UserResponse con el usuario actualizado
+     * @throws RuntimeException si el usuario no existe o si hay email duplicado
+     *
+     * Usado por: PUT /api/users/me
+     */
+    public UserResponse updateUserByEmail(String email, UpdateUserRequest request) {
+        // 1. Buscar el usuario existente
+        User user = userRepository.findByEmailUade(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con email: " + email));
+
+        // 2. Actualizar solo los campos proporcionados (si no son null)
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName());
+        }
+
+        if (request.getEmailUade() != null && !request.getEmailUade().equals(user.getEmailUade())) {
+            // Validar que el nuevo email no esté duplicado
+            if (userRepository.existsByEmailUade(request.getEmailUade())) {
+                throw new RuntimeException("El email " + request.getEmailUade() + " ya está en uso");
+            }
+            user.setEmailUade(request.getEmailUade());
+        }
+
+        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+            // Hashear la nueva contraseña con BCrypt
+            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        }
+
+        // 3. Guardar cambios
+        User updatedUser = userRepository.save(user);
+
+        // 4. Convertir a DTO y retornar
+        return convertToUserResponse(updatedUser);
     }
 
     /**

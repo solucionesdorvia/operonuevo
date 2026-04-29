@@ -108,15 +108,16 @@ public class IncidentController {
      * - Usado por alumnos y profesores para reportar problemas
      * - Requiere título, descripción, ubicación, departamento y reporter
      *
-     * @param incident Datos del nuevo incidente
-     * @return Incident creado
+     * @param request Datos del nuevo incidente
+     * @return IncidentResponse con el incidente creado
      */
     @PostMapping
     @Operation(
         summary = "Crear un nuevo incidente",
         description = "Crea un nuevo reporte de incidente. Este endpoint es utilizado por alumnos y profesores " +
                       "para reportar problemas de infraestructura en la institución. " +
-                      "Requiere título, descripción, ubicación, departamento asignado y el ID del usuario que reporta."
+                      "Requiere título, descripción, ubicación, departamento asignado y el ID del usuario que reporta. " +
+                      "El incidente se crea con estado PENDING y sin trabajador asignado."
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -124,7 +125,7 @@ public class IncidentController {
             description = "Incidente creado exitosamente",
             content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = Incident.class)
+                schema = @Schema(implementation = IncidentResponse.class)
             )
         ),
         @ApiResponse(
@@ -133,25 +134,33 @@ public class IncidentController {
             content = @Content
         ),
         @ApiResponse(
+            responseCode = "404",
+            description = "Reporter o departamento no encontrado",
+            content = @Content
+        ),
+        @ApiResponse(
             responseCode = "500",
             description = "Error interno del servidor",
             content = @Content
         )
     })
-    public ResponseEntity<Incident> createIncident(
+    public ResponseEntity<?> createIncident(
         @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Datos del incidente a crear. Debe incluir título, descripción, ubicación, departamento asignado y reporterId.",
+            description = "Datos del incidente a crear. Debe incluir título, descripción, ubicación, prioridad, departamento asignado y reporterId.",
             required = true,
             content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = Incident.class)
+                schema = @Schema(implementation = CreateIncidentRequest.class)
             )
         )
-        @RequestBody Incident incident
+        @RequestBody CreateIncidentRequest request
     ) {
-        // Por ahora usamos el repository directamente
-        // TODO: Migrar a usar incidentService.createIncident()
-        return ResponseEntity.ok(incident);
+        try {
+            IncidentResponse createdIncident = incidentService.createIncident(request);
+            return ResponseEntity.ok(createdIncident);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
     /**

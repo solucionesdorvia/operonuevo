@@ -6,6 +6,7 @@ import com.opero.api.repository.DepartmentRepository;
 import com.opero.api.repository.IncidentRepository;
 import com.opero.api.repository.IncidentHistoryRepository;
 import com.opero.api.repository.UserRepository;
+import com.opero.api.security.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -39,16 +40,63 @@ public class IncidentService {
     private IncidentHistoryRepository incidentHistoryRepository;
 
     /**
+     * Crear un nuevo incidente.
+     *
+     * ¿Qué hace este método?
+     * - Valida que el reporter y el department existan
+     * - Crea un nuevo incidente con estado PENDING
+     * - Guarda el incidente en la base de datos
+     * - Retorna el incidente creado como DTO
+     *
+     * @param request Datos del nuevo incidente
+     * @return IncidentResponse con el incidente creado
+     * @throws RuntimeException si el reporter o department no existen
+     *
+     * Usado por: POST /api/incidents
+     */
+    public IncidentResponse createIncident(CreateIncidentRequest request) {
+        // 1. Validar que el reporter existe
+        User reporter = userRepository.findById(request.getReporterId())
+                .orElseThrow(() -> new RuntimeException("Reporter no encontrado con ID: " + request.getReporterId()));
+
+        // 2. Validar que el department existe
+        Department department = departmentRepository.findById(request.getDepartmentId())
+                .orElseThrow(() -> new RuntimeException("Departamento no encontrado con ID: " + request.getDepartmentId()));
+
+        // 3. Crear el nuevo incidente
+        Incident incident = new Incident();
+        incident.setTitle(request.getTitle());
+        incident.setDescription(request.getDescription());
+        incident.setLocationDescription(request.getLocationDescription());
+        incident.setPhotoUrl(request.getPhotoUrl());
+        incident.setPriority(request.getPriority());
+        incident.setStatus(IncidentStatus.PENDING); // Estado inicial
+        incident.setReporter(reporter);
+        incident.setDepartment(department);
+        incident.setWorker(null); // Sin asignar inicialmente
+
+        // 4. Guardar en la base de datos (createdAt y updatedAt se generan automáticamente)
+        Incident savedIncident = incidentRepository.save(incident);
+
+        // 5. Convertir a DTO y retornar
+        return convertToIncidentResponse(savedIncident);
+    }
+
+    /**
      * Obtener un incidente por su ID.
      *
      * ¿Qué hace este método?
      * - Busca un incidente específico en la base de datos por su ID
+     * - Verifica que el usuario autenticado tenga permiso para verlo según su rol:
+     *   * STUDENT/PROFESSOR: Solo si es el reporter del incidente
+     *   * WORKER: Solo si está asignado al incidente
+     *   * MANAGER: Solo si el incidente es de su departamento
      * - Convierte la entidad Incident a IncidentResponse DTO
-     * - Lanza excepción si el incidente no existe
+     * - Lanza excepción si el incidente no existe o si no tiene permiso
      *
      * @param id ID del incidente a buscar
      * @return IncidentResponse con toda la información del incidente
-     * @throws RuntimeException si el incidente no existe
+     * @throws RuntimeException si el incidente no existe o no tiene permiso
      *
      * Usado por: GET /api/incidents/{id}
      */
@@ -56,6 +104,36 @@ public class IncidentService {
         // Buscar incidente por ID
         Incident incident = incidentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Incidente no encontrado con ID: " + id));
+
+        // Obtener el usuario autenticado
+        String currentUserEmail = SecurityUtil.getCurrentUserEmail();
+        String currentUserRole = SecurityUtil.getCurrentUserRole();
+        User currentUser = userRepository.findByEmailUade(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
+
+        // Verificar permisos según el rol
+        boolean hasPermission = false;
+        switch (currentUserRole) {
+            case "STUDENT":
+            case "PROFESSOR":
+                // Solo puede ver si es el reporter
+                hasPermission = incident.getReporter().getId().equals(currentUser.getId());
+                break;
+            case "WORKER":
+                // Solo puede ver si está asignado al incidente
+                hasPermission = incident.getWorker() != null &&
+                               incident.getWorker().getId().equals(currentUser.getId());
+                break;
+            case "MANAGER":
+                // Puede ver si el incidente es de su departamento
+                hasPermission = currentUser.getDepartment() != null &&
+                               incident.getDepartment().getId().equals(currentUser.getDepartment().getId());
+                break;
+        }
+
+        if (!hasPermission) {
+            throw new RuntimeException("No tiene permiso para ver este incidente");
+        }
 
         // Convertir a DTO y retornar
         return convertToIncidentResponse(incident);
@@ -66,7 +144,11 @@ public class IncidentService {
      *
      * ¿Qué hace este método?
      * - Obtiene todos los incidentes de la base de datos
-     * - Aplica filtros opcionales si se proporcionan
+     * - Aplica filtros automáticos según el rol del usuario autenticado:
+     *   * STUDENT/PROFESSOR: Solo ve sus propios incidentes (que reportaron)
+     *   * WORKER: Ve solo incidentes asignados a él
+     *   * MANAGER: Ve todos los incidentes de su departamento
+     * - Aplica filtros opcionales adicionales si se proporcionan
      * - Convierte cada Incident a IncidentResponse
      *
      * @param status (Opcional) Filtrar por estado del incidente
@@ -77,21 +159,46 @@ public class IncidentService {
      *
      * Usado por: GET /api/incidents
      *
-     * Ejemplos de uso:
-     * - GET /api/incidents → Todos los incidentes
-     * - GET /api/incidents?status=PENDING → Solo incidentes pendientes
-     * - GET /api/incidents?reporterId=1 → Solo incidentes reportados por el usuario 1
-     * - GET /api/incidents?workerId=4 → Solo incidentes asignados al trabajador 4
-     * - GET /api/incidents?departmentId=1 → Solo incidentes del departamento 1
-     * - GET /api/incidents?status=IN_PROCESS&departmentId=1 → Combinación de filtros
+     * Reglas de autorización:
+     * - STUDENT/PROFESSOR: Solo ven incidentes que ellos crearon
+     * - WORKER: Solo ve incidentes asignados a él
+     * - MANAGER: Ve todos los incidentes de su departamento
      */
     public List<IncidentResponse> getAllIncidents(IncidentStatus status, Integer reporterId,
                                                    Integer workerId, Integer departmentId) {
+        // Obtener el email y rol del usuario autenticado
+        String currentUserEmail = SecurityUtil.getCurrentUserEmail();
+        String currentUserRole = SecurityUtil.getCurrentUserRole();
+
+        // Buscar el usuario autenticado para obtener su ID y departamento
+        User currentUser = userRepository.findByEmailUade(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
+
         // Obtener todos los incidentes
         List<Incident> incidents = incidentRepository.findAll();
 
         // Aplicar filtros usando streams
         return incidents.stream()
+                // FILTRO AUTOMÁTICO POR ROL
+                .filter(incident -> {
+                    switch (currentUserRole) {
+                        case "STUDENT":
+                        case "PROFESSOR":
+                            // Solo pueden ver sus propios incidentes
+                            return incident.getReporter().getId().equals(currentUser.getId());
+                        case "WORKER":
+                            // Solo puede ver incidentes asignados a él
+                            return incident.getWorker() != null &&
+                                   incident.getWorker().getId().equals(currentUser.getId());
+                        case "MANAGER":
+                            // Puede ver todos los incidentes de su departamento
+                            return currentUser.getDepartment() != null &&
+                                   incident.getDepartment().getId().equals(currentUser.getDepartment().getId());
+                        default:
+                            return false; // Por seguridad, si no tiene rol conocido, no ve nada
+                    }
+                })
+                // FILTROS OPCIONALES (query parameters)
                 // Filtrar por status si se proporcionó
                 .filter(incident -> status == null || incident.getStatus() == status)
                 // Filtrar por reporterId si se proporcionó
