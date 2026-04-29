@@ -48,7 +48,7 @@ public class JwtUtil {
      * @param email Email del usuario (subject del token)
      * @param userId ID del usuario
      * @param roleId ID del rol
-     * @param roleName Nombre del rol (STUDENT, PROFESSOR, MANAGER, WORKER)
+     * @param roleName Nombre del rol (USER, MANAGER, WORKER)
      * @return Token JWT como String
      */
     public String generateToken(String email, Integer userId, Integer roleId, String roleName) {

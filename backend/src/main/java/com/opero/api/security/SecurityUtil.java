@@ -33,7 +33,7 @@ public class SecurityUtil {
     /**
      * Obtiene el rol del usuario actualmente autenticado.
      *
-     * @return Nombre del rol (ej: "STUDENT", "PROFESSOR", "MANAGER", "WORKER")
+     * @return Nombre del rol (ej: "USER", "MANAGER", "WORKER")
      * @throws IllegalStateException si no hay usuario autenticado
      */
     public static String getCurrentUserRole() {

@@ -592,6 +592,70 @@ public class IncidentController {
     }
 
     /**
+     * PATCH /api/incidents/{id}/accept - Aceptar un incidente
+     *
+     * ¿Qué hace este endpoint?
+     * - Permite que un manager acepte un incidente de su departamento
+     * - Cambia el estado del incidente a PENDING_ASSIGNMENT
+     * - Registra en el historial que el incidente fue aceptado
+     * - Solo puede ser llamado por managers del mismo departamento del incidente
+     *
+     * @param id ID del incidente
+     * @return IncidentResponse con el incidente actualizado
+     */
+    @PatchMapping("/{id}/accept")
+    @Operation(
+        summary = "Aceptar un incidente",
+        description = "Permite que un manager acepte un incidente de su departamento. " +
+                      "El incidente cambia automáticamente a estado PENDING_ASSIGNMENT, " +
+                      "indicando que el departamento se hace cargo y debe asignar un trabajador. " +
+                      "Solo managers del mismo departamento del incidente pueden aceptarlo."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Incidente aceptado exitosamente",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = IncidentResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "No tiene permiso para aceptar este incidente (departamento diferente)",
+            content = @Content
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Incidente no encontrado",
+            content = @Content
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Error interno del servidor",
+            content = @Content
+        )
+    })
+    public ResponseEntity<?> acceptIncident(
+        @io.swagger.v3.oas.annotations.Parameter(
+            description = "ID del incidente a aceptar",
+            required = true,
+            example = "1"
+        )
+        @PathVariable Integer id
+    ) {
+        try {
+            IncidentResponse acceptedIncident = incidentService.acceptIncident(id);
+            return ResponseEntity.ok(acceptedIncident);
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("No puede aceptar")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    /**
      * GET /api/incidents/{id}/history - Obtener historial de cambios de un incidente
      *
      * ¿Qué hace este endpoint?

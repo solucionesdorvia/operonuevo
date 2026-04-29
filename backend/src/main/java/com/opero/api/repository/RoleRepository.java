@@ -22,7 +22,7 @@ import java.util.Optional;
  * - existsById(Integer id): Verifica si existe un rol con ese ID
  *
  * Métodos personalizados:
- * - findByRoleName: Busca un rol por su nombre (STUDENT, PROFESSOR, MANAGER, WORKER)
+ * - findByRoleName: Busca un rol por su nombre (USER, MANAGER, WORKER)
  */
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Integer> {
@@ -30,7 +30,7 @@ public interface RoleRepository extends JpaRepository<Role, Integer> {
     /**
      * Busca un rol por su nombre.
      *
-     * @param roleName Nombre del rol (ej: "STUDENT", "PROFESSOR", "MANAGER", "WORKER")
+     * @param roleName Nombre del rol (ej: "USER", "MANAGER", "WORKER")
      * @return Optional con el rol si existe, Optional.empty() si no existe
      *
      * Usado por:

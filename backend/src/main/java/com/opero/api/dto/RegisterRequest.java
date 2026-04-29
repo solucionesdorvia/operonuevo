@@ -35,13 +35,13 @@ public class RegisterRequest {
             required = true)
     private String password;
 
-    // ID del rol: 1=STUDENT, 2=PROFESSOR, 3=MANAGER, 4=WORKER
-    @Schema(description = "ID del rol asignado al usuario (1=STUDENT, 2=PROFESSOR, 3=MANAGER, 4=WORKER)",
+    // ID del rol: 1=USER, 2=MANAGER, 3=WORKER
+    @Schema(description = "ID del rol asignado al usuario (1=USER, 2=MANAGER, 3=WORKER)",
             example = "1",
             required = true)
     private Integer roleId;
 
-    // ID del departamento (solo para MANAGER y WORKER, null para STUDENT y PROFESSOR)
+    // ID del departamento (solo para MANAGER y WORKER, null para USER)
     @Schema(description = "ID del departamento (opcional, solo para trabajadores y gerentes)",
             example = "1",
             required = false)

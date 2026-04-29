@@ -32,19 +32,19 @@ public class UserResponse {
     @Schema(description = "Email institucional del usuario", example = "juan.perez@uade.edu.ar")
     private String emailUade;
 
-    // Nombre del rol (STUDENT, PROFESSOR, MANAGER, WORKER)
-    @Schema(description = "Nombre del rol del usuario", example = "STUDENT")
+    // Nombre del rol (USER, MANAGER, WORKER)
+    @Schema(description = "Nombre del rol del usuario", example = "USER")
     private String roleName;
 
     // ID del rol (útil para el frontend al tomar decisiones)
     @Schema(description = "ID del rol", example = "1")
     private Integer roleId;
 
-    // ID del departamento (puede ser null para alumnos y profesores)
+    // ID del departamento (puede ser null para usuarios generales)
     @Schema(description = "ID del departamento (si aplica)", example = "1")
     private Integer departmentId;
 
-    // Nombre del departamento (puede ser null para alumnos y profesores)
+    // Nombre del departamento (puede ser null para usuarios generales)
     @Schema(description = "Nombre del departamento (si aplica)", example = "Mantenimiento")
     private String departmentName;
 

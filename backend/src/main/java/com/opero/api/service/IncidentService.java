@@ -88,7 +88,7 @@ public class IncidentService {
      * ¿Qué hace este método?
      * - Busca un incidente específico en la base de datos por su ID
      * - Verifica que el usuario autenticado tenga permiso para verlo según su rol:
-     *   * STUDENT/PROFESSOR: Solo si es el reporter del incidente
+     *   * USER: Solo si es el reporter del incidente
      *   * WORKER: Solo si está asignado al incidente
      *   * MANAGER: Solo si el incidente es de su departamento
      * - Convierte la entidad Incident a IncidentResponse DTO
@@ -114,8 +114,7 @@ public class IncidentService {
         // Verificar permisos según el rol
         boolean hasPermission = false;
         switch (currentUserRole) {
-            case "STUDENT":
-            case "PROFESSOR":
+            case "USER":
                 // Solo puede ver si es el reporter
                 hasPermission = incident.getReporter().getId().equals(currentUser.getId());
                 break;
@@ -145,7 +144,7 @@ public class IncidentService {
      * ¿Qué hace este método?
      * - Obtiene todos los incidentes de la base de datos
      * - Aplica filtros automáticos según el rol del usuario autenticado:
-     *   * STUDENT/PROFESSOR: Solo ve sus propios incidentes (que reportaron)
+     *   * USER: Solo ve sus propios incidentes (que reportaron)
      *   * WORKER: Ve solo incidentes asignados a él
      *   * MANAGER: Ve todos los incidentes de su departamento
      * - Aplica filtros opcionales adicionales si se proporcionan
@@ -160,7 +159,7 @@ public class IncidentService {
      * Usado por: GET /api/incidents
      *
      * Reglas de autorización:
-     * - STUDENT/PROFESSOR: Solo ven incidentes que ellos crearon
+     * - USER: Solo ven incidentes que ellos crearon
      * - WORKER: Solo ve incidentes asignados a él
      * - MANAGER: Ve todos los incidentes de su departamento
      */
@@ -182,8 +181,7 @@ public class IncidentService {
                 // FILTRO AUTOMÁTICO POR ROL
                 .filter(incident -> {
                     switch (currentUserRole) {
-                        case "STUDENT":
-                        case "PROFESSOR":
+                        case "USER":
                             // Solo pueden ver sus propios incidentes
                             return incident.getReporter().getId().equals(currentUser.getId());
                         case "WORKER":
@@ -276,6 +274,54 @@ public class IncidentService {
 
         // 2. Eliminar el incidente
         incidentRepository.deleteById(id);
+    }
+
+    /**
+     * Aceptar un incidente.
+     *
+     * ¿Qué hace este método?
+     * - Busca el incidente por ID
+     * - Verifica que el manager que acepta pertenezca al departamento del incidente
+     * - Cambia el estado del incidente a PENDING_ASSIGNMENT
+     * - Registra en el historial que el incidente fue aceptado
+     *
+     * @param id ID del incidente
+     * @return IncidentResponse con el incidente actualizado
+     * @throws RuntimeException si el incidente no existe o si el manager no pertenece al departamento
+     *
+     * Usado por: PATCH /api/incidents/{id}/accept
+     */
+    public IncidentResponse acceptIncident(Integer id) {
+        // 1. Buscar el incidente
+        Incident incident = incidentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Incidente no encontrado con ID: " + id));
+
+        // 2. Obtener el usuario autenticado (manager)
+        String currentUserEmail = SecurityUtil.getCurrentUserEmail();
+        User currentUser = userRepository.findByEmailUade(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
+
+        // 3. Verificar que el manager pertenece al departamento del incidente
+        if (currentUser.getDepartment() == null ||
+            !incident.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
+            throw new RuntimeException("No puede aceptar incidentes de otros departamentos");
+        }
+
+        // 4. Guardar el valor anterior para el historial
+        String oldStatus = incident.getStatus().toString();
+
+        // 5. Cambiar el estado a PENDING_ASSIGNMENT
+        incident.setStatus(IncidentStatus.PENDING_ASSIGNMENT);
+
+        // 6. Guardar
+        Incident updatedIncident = incidentRepository.save(incident);
+
+        // 7. Registrar cambio en el historial
+        recordHistory(updatedIncident, "INCIDENT_ACCEPTED", oldStatus,
+                     IncidentStatus.PENDING_ASSIGNMENT.toString(), currentUser.getId());
+
+        // 8. Retornar
+        return convertToIncidentResponse(updatedIncident);
     }
 
     /**

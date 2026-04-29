@@ -29,7 +29,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *
  * Reglas de negocio:
  * - Endpoints públicos: /api/auth/login, /api/auth/register, /api/ping, Swagger
- * - STUDENT/PROFESSOR: Crear incidentes, ver solo sus propios incidentes
+ * - USER: Crear incidentes, ver solo sus propios incidentes
  * - WORKER: Ver incidentes asignados a él, cambiar status
  * - MANAGER: Ver todos los incidentes de su departamento, asignar workers, gestión completa
  */
@@ -92,14 +92,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/users").hasRole("MANAGER") // Listar usuarios: solo MANAGER
 
                 // Endpoints de INCIDENTES - Reglas por rol
-                // Crear incidente: STUDENT, PROFESSOR, MANAGER (no WORKER)
-                .requestMatchers(HttpMethod.POST, "/api/incidents").hasAnyRole("STUDENT", "PROFESSOR", "MANAGER")
+                // Crear incidente: USER, MANAGER (no WORKER)
+                .requestMatchers(HttpMethod.POST, "/api/incidents").hasAnyRole("USER", "MANAGER")
                 // Listar incidentes: todos autenticados (filtrado por rol en service)
                 .requestMatchers(HttpMethod.GET, "/api/incidents").authenticated()
                 // Ver detalle de incidente: todos autenticados (filtrado por rol en service)
                 .requestMatchers(HttpMethod.GET, "/api/incidents/{id}").authenticated()
-                // Actualizar incidente: STUDENT, PROFESSOR, MANAGER (validación en service)
-                .requestMatchers(HttpMethod.PUT, "/api/incidents/{id}").hasAnyRole("STUDENT", "PROFESSOR", "MANAGER")
+                // Actualizar incidente: USER, MANAGER (validación en service)
+                .requestMatchers(HttpMethod.PUT, "/api/incidents/{id}").hasAnyRole("USER", "MANAGER")
                 // Eliminar incidente: solo MANAGER
                 .requestMatchers(HttpMethod.DELETE, "/api/incidents/{id}").hasRole("MANAGER")
 
@@ -108,6 +108,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/incidents/{id}/assign").hasRole("MANAGER")
                 .requestMatchers("/api/incidents/{id}/priority").hasRole("MANAGER")
                 .requestMatchers("/api/incidents/{id}/department").hasRole("MANAGER")
+                .requestMatchers("/api/incidents/{id}/accept").hasRole("MANAGER")
 
                 // Endpoints de DEPARTAMENTOS
                 .requestMatchers("/api/departments/**").authenticated()

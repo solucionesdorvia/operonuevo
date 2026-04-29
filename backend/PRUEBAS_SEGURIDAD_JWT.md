@@ -38,7 +38,7 @@
 
 ## 🧪 SECCIÓN 1: Autenticación Básica
 
-### ✅ Prueba 1.1: Registrar usuario STUDENT
+### ✅ Prueba 1.1: Registrar usuario USER (alumno/profesor)
 
 **Endpoint:** `POST /api/auth/register`
 
@@ -48,7 +48,7 @@
   "fullName": "Juan Pérez",
   "emailUade": "juan.perez@uade.edu.ar",
   "password": "password123",
-  "roleId": 1,
+  "roleId": 5,
   "departmentId": null
 }
 ```
@@ -58,15 +58,15 @@
 - ✅ Respuesta contiene:
   - `token` (string largo)
   - `user.id` (número)
-  - `user.roleId` = 1
-  - `user.roleName` = "STUDENT"
+  - `user.roleId` = 5
+  - `user.roleName` = "USER"
   - `message` = "Registro exitoso"
 
 **Acción:** Copiar el `token` para próximas pruebas
 
 ---
 
-### ✅ Prueba 1.2: Registrar usuario PROFESSOR
+### ✅ Prueba 1.2: Registrar otro usuario USER
 
 **Endpoint:** `POST /api/auth/register`
 
@@ -76,14 +76,14 @@
   "fullName": "María García",
   "emailUade": "maria.garcia@uade.edu.ar",
   "password": "password456",
-  "roleId": 2,
+  "roleId": 5,
   "departmentId": null
 }
 ```
 
 **Resultado Esperado:**
 - ✅ Status Code: **200 OK**
-- ✅ `user.roleName` = "PROFESSOR"
+- ✅ `user.roleName` = "USER"
 
 ---
 
@@ -97,7 +97,7 @@
   "fullName": "Carlos Rodríguez",
   "emailUade": "carlos.rodriguez@uade.edu.ar",
   "password": "password789",
-  "roleId": 3,
+  "roleId": 6,
   "departmentId": 1
 }
 ```
@@ -120,7 +120,7 @@
   "fullName": "Ana Martínez",
   "emailUade": "ana.martinez@uade.edu.ar",
   "password": "password321",
-  "roleId": 4,
+  "roleId": 7,
   "departmentId": 1
 }
 ```
@@ -196,7 +196,7 @@
   "fullName": "Usuario Duplicado",
   "emailUade": "juan.perez@uade.edu.ar",
   "password": "password999",
-  "roleId": 1,
+  "roleId": 5,
   "departmentId": null
 }
 ```
@@ -267,7 +267,7 @@
 - ✅ Respuesta contiene:
   - `fullName` = "Juan Pérez"
   - `emailUade` = "juan.perez@uade.edu.ar"
-  - `roleName` = "STUDENT"
+  - `roleName` = "USER"
 
 **⚠️ A partir de ahora, TODOS los requests incluirán este token automáticamente**
 
@@ -302,7 +302,7 @@
 ```json
 {
   "fullName": "Juan Pérez",
-  "roleId": 3
+  "roleId": 6
 }
 ```
 
@@ -316,7 +316,7 @@
 
 ### Setup: Crear Incidentes de Prueba
 
-Primero, como **Juan (STUDENT)**, crear 2 incidentes:
+Primero, como **Juan (USER)**, crear 2 incidentes:
 
 **Endpoint:** `POST /api/incidents`
 
@@ -357,10 +357,10 @@ Authorization: Bearer <token-de-juan.perez>
 
 ---
 
-### ✅ Prueba 3.1: STUDENT ve solo sus incidentes
+### ✅ Prueba 3.1: USER ve solo sus incidentes
 
 **Pasos en Swagger:**
-1. Verificar que estás autorizado como **Juan Pérez** (STUDENT)
+1. Verificar que estás autorizado como **Juan Pérez** (USER)
 2. Si no: "Logout" → Login como Juan → Copiar token → "Authorize" con ese token
 3. El candado debe estar 🔓
 
@@ -373,7 +373,7 @@ Authorization: Bearer <token-de-juan.perez>
 
 ---
 
-### ✅ Prueba 3.2: PROFESSOR ve solo sus incidentes
+### ✅ Prueba 3.2: Otro USER ve solo sus incidentes
 
 **Cambiar de usuario en Swagger:**
 1. Hacer clic en "Authorize" → "Logout"
@@ -424,7 +424,7 @@ Authorization: Bearer <token-de-carlos.rodriguez>
 **JSON Request:**
 ```json
 {
-  "workerId": 4
+  "workerId": 3
 }
 ```
 
@@ -440,7 +440,7 @@ Authorization: Bearer <token-de-ana.martinez>
 **Resultado Esperado:**
 - ✅ Status Code: **200 OK**
 - ✅ Array con **1 incidente** (el asignado a Ana)
-- ✅ `worker.id` = 4
+- ✅ `worker.id` = 3
 
 ---
 
@@ -463,9 +463,9 @@ Authorization: Bearer <token-de-carlos.rodriguez>
 
 ---
 
-### ✅ Prueba 3.5: STUDENT intenta ver incidente de otro usuario (403)
+### ✅ Prueba 3.5: USER intenta ver incidente de otro usuario (403)
 
-**Login como Juan (STUDENT)**
+**Login como Juan (USER)**
 
 **Endpoint:** `GET /api/incidents/{id-de-maria}`
 
@@ -499,7 +499,7 @@ Authorization: Bearer <token-de-ana.martinez>
   "locationDescription": "Test",
   "priority": "LOW",
   "departmentId": 1,
-  "reporterId": 4
+  "reporterId": 3
 }
 ```
 
@@ -517,7 +517,47 @@ Authorization: Bearer <token-de-ana.martinez>
 
 ## 🛠️ SECCIÓN 4: Operaciones de Gestión de Incidentes
 
-### ✅ Prueba 4.1: WORKER cambia estado a IN_PROCESS
+### ✅ Prueba 4.1: MANAGER acepta un incidente (NUEVO)
+
+**Login como Carlos (MANAGER)**
+
+**Endpoint:** `PATCH /api/incidents/{id}/accept`
+
+**Headers:**
+```
+Authorization: Bearer <token-de-carlos.rodriguez>
+```
+
+**Descripción:**
+El manager acepta un incidente de su departamento, cambiando automáticamente el estado a PENDING_ASSIGNMENT.
+
+**Resultado Esperado:**
+- ✅ Status Code: **200 OK**
+- ✅ `status` = "PENDING_ASSIGNMENT"
+- ✅ El incidente fue aceptado por el departamento
+
+---
+
+### ✅ Prueba 4.2: MANAGER intenta aceptar incidente de otro departamento (403)
+
+**Login como Carlos (MANAGER de Departamento 1)**
+
+**Endpoint:** `PATCH /api/incidents/{id-de-departamento-2}/accept`
+
+**Headers:**
+```
+Authorization: Bearer <token-de-carlos.rodriguez>
+```
+
+**Resultado Esperado:**
+- ✅ Status Code: **403 Forbidden**
+- ✅ Body: "No puede aceptar incidentes de otros departamentos"
+
+---
+
+### ✅ Prueba 4.3: WORKER cambia estado a IN_PROCESS
+
+### ✅ Prueba 4.4: WORKER cambia estado a IN_PROCESS
 
 **Login como Ana (WORKER)**
 
@@ -541,7 +581,7 @@ Authorization: Bearer <token-de-ana.martinez>
 
 ---
 
-### ✅ Prueba 4.2: WORKER cambia estado a FINISHED
+### ✅ Prueba 4.5: WORKER cambia estado a FINISHED
 
 **Endpoint:** `PATCH /api/incidents/{id-asignado-a-ana}/status`
 
@@ -558,9 +598,9 @@ Authorization: Bearer <token-de-ana.martinez>
 
 ---
 
-### ✅ Prueba 4.3: STUDENT intenta cambiar estado (403)
+### ✅ Prueba 4.6: USER intenta cambiar estado (403)
 
-**Login como Juan (STUDENT)**
+**Login como Juan (USER)**
 
 **Endpoint:** `PATCH /api/incidents/{id}/status`
 
@@ -582,7 +622,7 @@ Authorization: Bearer <token-de-juan.perez>
 
 ---
 
-### ✅ Prueba 4.4: MANAGER asigna worker a incidente
+### ✅ Prueba 4.7: MANAGER asigna worker a incidente
 
 **Login como Carlos (MANAGER)**
 
@@ -596,18 +636,18 @@ Authorization: Bearer <token-de-carlos.rodriguez>
 **JSON Request:**
 ```json
 {
-  "workerId": 4
+  "workerId": 3
 }
 ```
 
 **Resultado Esperado:**
 - ✅ Status Code: **200 OK**
-- ✅ `worker.id` = 4
+- ✅ `worker.id` = 3
 - ✅ `status` = "ASSIGNED"
 
 ---
 
-### ✅ Prueba 4.5: WORKER intenta asignar incidente (403)
+### ✅ Prueba 4.8: WORKER intenta asignar incidente (403)
 
 **Login como Ana (WORKER)**
 
@@ -621,7 +661,7 @@ Authorization: Bearer <token-de-ana.martinez>
 **JSON Request:**
 ```json
 {
-  "workerId": 4
+  "workerId": 3
 }
 ```
 
@@ -630,7 +670,7 @@ Authorization: Bearer <token-de-ana.martinez>
 
 ---
 
-### ✅ Prueba 4.6: MANAGER cambia prioridad
+### ✅ Prueba 4.9: MANAGER cambia prioridad
 
 **Login como Carlos (MANAGER)**
 
@@ -654,9 +694,9 @@ Authorization: Bearer <token-de-carlos.rodriguez>
 
 ---
 
-### ✅ Prueba 4.7: STUDENT intenta cambiar prioridad (403)
+### ✅ Prueba 4.10: USER intenta cambiar prioridad (403)
 
-**Login como Juan (STUDENT)**
+**Login como Juan (USER)**
 
 **Endpoint:** `PATCH /api/incidents/{id}/priority`
 
@@ -677,7 +717,7 @@ Authorization: Bearer <token-de-juan.perez>
 
 ---
 
-### ✅ Prueba 4.8: MANAGER deriva incidente a otro departamento
+### ✅ Prueba 4.11: MANAGER deriva incidente a otro departamento
 
 **Login como Carlos (MANAGER)**
 
@@ -722,9 +762,9 @@ Authorization: Bearer <token-de-carlos.rodriguez>
 
 ---
 
-### ✅ Prueba 5.2: STUDENT intenta listar usuarios (403)
+### ✅ Prueba 5.2: USER intenta listar usuarios (403)
 
-**Login como Juan (STUDENT)**
+**Login como Juan (USER)**
 
 **Endpoint:** `GET /api/users`
 
@@ -755,9 +795,9 @@ Authorization: Bearer <token-de-carlos.rodriguez>
 
 ---
 
-### ✅ Prueba 5.4: STUDENT intenta ver otro usuario (403)
+### ✅ Prueba 5.4: USER intenta ver otro usuario (403)
 
-**Login como Juan (STUDENT)**
+**Login como Juan (USER)**
 
 **Endpoint:** `GET /api/users/2`
 

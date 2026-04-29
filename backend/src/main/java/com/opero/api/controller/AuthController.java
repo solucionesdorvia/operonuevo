@@ -127,7 +127,7 @@ public class AuthController {
         summary = "Registrar nuevo usuario",
         description = "Crea una nueva cuenta de usuario en el sistema. " +
                       "Requiere nombre completo, email institucional (debe ser único), contraseña, rol y opcionalmente departamento. " +
-                      "Los roles son: 1=STUDENT, 2=PROFESSOR, 3=MANAGER, 4=WORKER. " +
+                      "Los roles son: 1=USER, 2=MANAGER, 3=WORKER. " +
                       "El departmentId es obligatorio solo para MANAGER y WORKER."
     )
     @ApiResponses(value = {

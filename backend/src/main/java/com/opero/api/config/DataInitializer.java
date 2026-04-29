@@ -39,13 +39,12 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     /**
-     * Inicializa los 4 roles del sistema si no existen.
+     * Inicializa los 3 roles del sistema si no existen.
      *
      * Roles según el DER:
-     * 1. STUDENT - Alumnos que reportan incidentes
-     * 2. PROFESSOR - Profesores que reportan incidentes
-     * 3. MANAGER - Gerentes de departamento que gestionan incidentes
-     * 4. WORKER - Trabajadores que resuelven incidentes
+     * 1. USER - Usuarios generales (alumnos y profesores) que reportan incidentes
+     * 2. MANAGER - Gerentes de departamento que gestionan incidentes
+     * 3. WORKER - Trabajadores que resuelven incidentes
      */
     private void initializeRoles() {
         // Verificar si ya existen roles
@@ -56,14 +55,10 @@ public class DataInitializer implements CommandLineRunner {
 
         System.out.println("🔧 Inicializando roles del sistema...");
 
-        // Crear los 4 roles (sin setear ID, que sea auto-generado)
-        Role student = new Role();
-        student.setRoleName("STUDENT");
-        roleRepository.save(student);
-
-        Role professor = new Role();
-        professor.setRoleName("PROFESSOR");
-        roleRepository.save(professor);
+        // Crear los 3 roles (sin setear ID, que sea auto-generado)
+        Role user = new Role();
+        user.setRoleName("USER");
+        roleRepository.save(user);
 
         Role manager = new Role();
         manager.setRoleName("MANAGER");
@@ -73,7 +68,7 @@ public class DataInitializer implements CommandLineRunner {
         worker.setRoleName("WORKER");
         roleRepository.save(worker);
 
-        System.out.println("✅ Roles inicializados: STUDENT, PROFESSOR, MANAGER, WORKER");
+        System.out.println("✅ Roles inicializados: USER, MANAGER, WORKER");
     }
 
     /**
