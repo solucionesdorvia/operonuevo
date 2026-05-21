@@ -1,7 +1,18 @@
 package com.opero.api.service;
 
-import com.opero.api.dto.*;
-import com.opero.api.entity.*;
+import com.opero.api.dto.AssignWorkerRequest;
+import com.opero.api.dto.CreateIncidentRequest;
+import com.opero.api.dto.IncidentHistoryResponse;
+import com.opero.api.dto.IncidentResponse;
+import com.opero.api.dto.UpdateDepartmentRequest;
+import com.opero.api.dto.UpdateIncidentRequest;
+import com.opero.api.dto.UpdatePriorityRequest;
+import com.opero.api.dto.UpdateStatusRequest;
+import com.opero.api.entity.Department;
+import com.opero.api.entity.Incident;
+import com.opero.api.entity.IncidentHistory;
+import com.opero.api.entity.IncidentStatus;
+import com.opero.api.entity.User;
 import com.opero.api.repository.DepartmentRepository;
 import com.opero.api.repository.IncidentRepository;
 import com.opero.api.repository.IncidentHistoryRepository;
