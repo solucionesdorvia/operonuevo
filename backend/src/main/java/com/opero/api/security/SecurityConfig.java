@@ -15,6 +15,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Configuración de Spring Security.
@@ -59,6 +64,9 @@ public class SecurityConfig {
             // Deshabilitar CSRF (Cross-Site Request Forgery)
             // No es necesario con JWT porque no usamos cookies
             .csrf(csrf -> csrf.disable())
+
+            // Habilitar CORS con la configuración definida abajo
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
             // Permitir H2 Console en frames (solo para desarrollo)
             .headers(headers -> headers
@@ -172,5 +180,51 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    /**
+     * Configuración de CORS (Cross-Origin Resource Sharing).
+     *
+     * ¿Por qué necesitamos CORS?
+     * - El frontend (React Native/Expo) hace peticiones HTTP al backend
+     * - Por seguridad, los navegadores bloquean peticiones entre diferentes orígenes
+     * - Debemos configurar qué orígenes están permitidos
+     *
+     * ¿Qué orígenes permitimos?
+     * - http://localhost:8081 - Expo en web
+     * - http://localhost:19000, 19001, 19002, 19006 - Expo DevTools
+     * - http://192.168.*.* - Dispositivos móviles en la red local
+     * - http://10.0.2.2:8080 - Emulador Android (mapea a localhost del host)
+     *
+     * IMPORTANTE: En producción, debes cambiar esto para permitir solo tu dominio real.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // Permitir todos los orígenes en desarrollo
+        // En producción, especificar dominios exactos: configuration.setAllowedOrigins(Arrays.asList("https://tuapp.com"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+
+        // Métodos HTTP permitidos
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+
+        // Headers permitidos (importante incluir Authorization para JWT)
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+
+        // Permitir credenciales (cookies, authorization headers)
+        configuration.setAllowCredentials(true);
+
+        // Headers expuestos al cliente
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
+
+        // Tiempo de cacheo de preflight requests (en segundos)
+        configuration.setMaxAge(3600L);
+
+        // Aplicar esta configuración a todos los endpoints
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
     }
 }
