@@ -4,6 +4,8 @@ import com.opero.api.entity.Role;
 import com.opero.api.entity.Department;
 import com.opero.api.repository.RoleRepository;
 import com.opero.api.repository.DepartmentRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -29,6 +31,7 @@ import org.slf4j.LoggerFactory;
 public class DataInitializer implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
+    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     @Autowired
     private RoleRepository roleRepository;
@@ -58,6 +61,11 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         logger.info("Inicializando roles del sistema...");
+            log.info("Roles ya inicializados ({} roles encontrados)", roleRepository.count());
+            return;
+        }
+
+        log.info("Inicializando roles del sistema...");
 
         // Crear los 3 roles (sin setear ID, que sea auto-generado)
         Role user = new Role();
@@ -73,6 +81,7 @@ public class DataInitializer implements CommandLineRunner {
         roleRepository.save(worker);
 
         logger.info("Roles inicializados: USER, MANAGER, WORKER");
+        log.info("Roles inicializados: USER, MANAGER, WORKER");
     }
 
     /**
@@ -95,6 +104,11 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         logger.info("Inicializando departamentos del sistema...");
+            log.info("Departamentos ya inicializados ({} departamentos encontrados)", departmentRepository.count());
+            return;
+        }
+
+        log.info("Inicializando departamentos del sistema...");
 
         // Crear los departamentos básicos
         Department mantenimiento = new Department();
@@ -118,5 +132,6 @@ public class DataInitializer implements CommandLineRunner {
         departmentRepository.save(limpieza);
 
         logger.info("Departamentos inicializados: Mantenimiento, Redes, Infraestructura, Limpieza");
+        log.info("Departamentos inicializados: Mantenimiento, Redes, Infraestructura, Limpieza");
     }
 }
