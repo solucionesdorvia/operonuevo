@@ -2,6 +2,8 @@ package com.opero.api.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -36,8 +38,10 @@ public class IncidentHistory {
     private Integer id;
 
     // Relación con el incidente (muchos registros de historial pertenecen a un incidente)
+    // Cuando se elimina el incidente, se elimina automáticamente su historial
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "incident_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Incident incident;
 
     // Tipo de cambio realizado

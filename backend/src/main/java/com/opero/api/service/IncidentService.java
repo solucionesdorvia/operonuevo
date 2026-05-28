@@ -267,12 +267,28 @@ public class IncidentService {
      * Usado por: DELETE /api/incidents/{id}
      */
     public void deleteIncident(Integer id) {
-        // 1. Verificar que el incidente existe
-        if (!incidentRepository.existsById(id)) {
-            throw new RuntimeException("Incidente no encontrado con ID: " + id);
+        // 1. Buscar el incidente
+        Incident incident = incidentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Incidente no encontrado con ID: " + id));
+
+        // 2. Obtener el usuario autenticado
+        String currentUserEmail = SecurityUtil.getCurrentUserEmail();
+        User currentUser = userRepository.findByEmailUade(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
+
+        // 3. Verificar permisos:
+        // - USER: Solo si es el reporter del incidente
+        // - MANAGER: Siempre puede eliminar incidentes de su departamento
+        boolean isReporter = incident.getReporter().getId().equals(currentUser.getId());
+        boolean isManager = "MANAGER".equals(currentUser.getRole().getRoleName());
+        boolean isManagerOfDepartment = isManager && currentUser.getDepartment() != null &&
+                                       incident.getDepartment().getId().equals(currentUser.getDepartment().getId());
+
+        if (!isReporter && !isManagerOfDepartment) {
+            throw new RuntimeException("No tiene permiso para eliminar este incidente");
         }
 
-        // 2. Eliminar el incidente
+        // 4. Eliminar el incidente
         incidentRepository.deleteById(id);
     }
 
