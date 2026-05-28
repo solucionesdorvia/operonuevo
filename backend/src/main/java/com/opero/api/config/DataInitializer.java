@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Inicializador de datos fundamentales del sistema.
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DataInitializer implements CommandLineRunner {
 
+    private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     @Autowired
@@ -53,6 +56,11 @@ public class DataInitializer implements CommandLineRunner {
     private void initializeRoles() {
         // Verificar si ya existen roles
         if (roleRepository.count() > 0) {
+            logger.info("Roles ya inicializados ({} roles encontrados)", roleRepository.count());
+            return;
+        }
+
+        logger.info("Inicializando roles del sistema...");
             log.info("Roles ya inicializados ({} roles encontrados)", roleRepository.count());
             return;
         }
@@ -72,6 +80,7 @@ public class DataInitializer implements CommandLineRunner {
         worker.setRoleName("WORKER");
         roleRepository.save(worker);
 
+        logger.info("Roles inicializados: USER, MANAGER, WORKER");
         log.info("Roles inicializados: USER, MANAGER, WORKER");
     }
 
@@ -90,6 +99,11 @@ public class DataInitializer implements CommandLineRunner {
     private void initializeDepartments() {
         // Verificar si ya existen departamentos
         if (departmentRepository.count() > 0) {
+            logger.info("Departamentos ya inicializados ({} departamentos encontrados)", departmentRepository.count());
+            return;
+        }
+
+        logger.info("Inicializando departamentos del sistema...");
             log.info("Departamentos ya inicializados ({} departamentos encontrados)", departmentRepository.count());
             return;
         }
@@ -117,6 +131,7 @@ public class DataInitializer implements CommandLineRunner {
         limpieza.setManager(null);
         departmentRepository.save(limpieza);
 
+        logger.info("Departamentos inicializados: Mantenimiento, Redes, Infraestructura, Limpieza");
         log.info("Departamentos inicializados: Mantenimiento, Redes, Infraestructura, Limpieza");
     }
 }

@@ -21,6 +21,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -303,8 +305,9 @@ public class IncidentController {
      *
      * ¿Qué hace este endpoint?
      * - Elimina un incidente del sistema de forma permanente
-     * - Validación: solo gerentes o administradores deberían poder eliminar
-     * - TODO: Agregar validación de permisos
+     * - Permisos:
+     *   * USER: Solo puede eliminar sus propios incidentes (si es el reporter)
+     *   * MANAGER: Puede eliminar incidentes de su departamento
      *
      * @param id ID del incidente a eliminar
      * @return Mensaje de confirmación
@@ -314,12 +317,18 @@ public class IncidentController {
         summary = "Eliminar incidente",
         description = "Elimina un incidente del sistema de forma permanente. " +
                       "Esta operación no se puede deshacer. " +
-                      "Típicamente solo gerentes o administradores deberían tener permiso para eliminar incidentes."
+                      "USER puede eliminar solo sus propios incidentes. " +
+                      "MANAGER puede eliminar incidentes de su departamento."
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200",
             description = "Incidente eliminado exitosamente",
+            content = @Content
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "No tiene permiso para eliminar este incidente",
             content = @Content
         ),
         @ApiResponse(
@@ -345,6 +354,9 @@ public class IncidentController {
             incidentService.deleteIncident(id);
             return ResponseEntity.ok("Incidente eliminado exitosamente");
         } catch (RuntimeException e) {
+            if (e.getMessage().contains("No tiene permiso")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+            }
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
@@ -490,11 +502,12 @@ public class IncidentController {
      * @return IncidentResponse con el incidente actualizado
      */
     @PatchMapping("/{id}/priority")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('WORKER')")
     @Operation(
         summary = "Cambiar prioridad del incidente",
         description = "Actualiza la prioridad de un incidente. " +
                       "Prioridades disponibles: LOW (baja), MEDIUM (media), HIGH (alta). " +
-                      "Usado por gerentes para ajustar la urgencia según la criticidad del problema."
+                      "Usado por gerentes y trabajadores para ajustar la urgencia según la criticidad del problema."
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -504,6 +517,11 @@ public class IncidentController {
                 mediaType = "application/json",
                 schema = @Schema(implementation = IncidentResponse.class)
             )
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Acceso denegado - Solo MANAGER o WORKER",
+            content = @Content
         ),
         @ApiResponse(
             responseCode = "404",

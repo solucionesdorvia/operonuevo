@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -56,12 +58,14 @@ public class DepartmentController {
      * @return Lista de DepartmentResponse
      */
     @GetMapping
+    @PreAuthorize("hasRole('MANAGER')")
     @Operation(
             summary = "Listar todos los departamentos",
             description = "Retorna todos los departamentos del sistema con información del gerente asignado."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente"),
+            @ApiResponse(responseCode = "403", description = "Acceso denegado - Solo MANAGER"),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     public ResponseEntity<List<DepartmentResponse>> getAllDepartments() {
@@ -85,12 +89,14 @@ public class DepartmentController {
      * @return DepartmentResponse con la información del departamento
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
     @Operation(
             summary = "Obtener departamento por ID",
             description = "Retorna la información completa de un departamento específico por su ID."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Departamento encontrado"),
+            @ApiResponse(responseCode = "403", description = "Acceso denegado - Solo MANAGER"),
             @ApiResponse(responseCode = "404", description = "Departamento no encontrado"),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
@@ -109,7 +115,7 @@ public class DepartmentController {
      * - Permite actualizar el nombre del departamento
      * - Permite cambiar el gerente (manager) del departamento
      * - Todos los campos son opcionales (actualización parcial)
-     * - TODO: Validar que solo administradores puedan usar este endpoint
+     * - Solo MANAGER puede usar este endpoint
      *
      * Usado por:
      * - Pantalla de administración de departamentos
@@ -120,6 +126,7 @@ public class DepartmentController {
      * @return DepartmentResponse con el departamento actualizado
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
     @Operation(
             summary = "Actualizar departamento",
             description = "Permite actualizar el nombre y/o gerente de un departamento. " +
@@ -128,6 +135,7 @@ public class DepartmentController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Departamento actualizado exitosamente"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos (ej: manager no existe)"),
+            @ApiResponse(responseCode = "403", description = "Acceso denegado - Solo MANAGER"),
             @ApiResponse(responseCode = "404", description = "Departamento no encontrado"),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
@@ -136,7 +144,6 @@ public class DepartmentController {
             @PathVariable Integer id,
             @RequestBody DepartmentUpdateRequest request
     ) {
-        // TODO: Validar que el usuario autenticado sea administrador
         DepartmentResponse updatedDepartment = departmentService.updateDepartment(id, request);
         return ResponseEntity.ok(updatedDepartment);
     }
