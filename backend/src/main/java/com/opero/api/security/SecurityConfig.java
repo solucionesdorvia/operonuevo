@@ -80,6 +80,8 @@ public class SecurityConfig {
                     "/api/auth/login",       // Login
                     "/api/auth/register",    // Registro
                     "/api/ping",             // Health check
+                    "/api/departments",      // Lista de departamentos (necesario para registro)
+                    "/api/departments/**",   // Detalles de departamentos (necesario para crear incidentes)
                     "/swagger-ui/**",        // Swagger UI
                     "/swagger-ui.html",      // Swagger HTML
                     "/v3/api-docs/**",       // OpenAPI docs
@@ -117,9 +119,6 @@ public class SecurityConfig {
                 .requestMatchers("/api/incidents/{id}/priority").hasRole("MANAGER")
                 .requestMatchers("/api/incidents/{id}/department").hasRole("MANAGER")
                 .requestMatchers("/api/incidents/{id}/accept").hasRole("MANAGER")
-
-                // Endpoints de DEPARTAMENTOS
-                .requestMatchers("/api/departments/**").authenticated()
 
                 // Cualquier otro endpoint requiere autenticación
                 .anyRequest().authenticated()
