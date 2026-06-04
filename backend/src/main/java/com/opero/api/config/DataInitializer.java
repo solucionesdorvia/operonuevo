@@ -9,28 +9,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Inicializador de datos fundamentales del sistema.
- *
- * ¿Qué hace esta clase?
- * - Se ejecuta automáticamente al iniciar la aplicación (CommandLineRunner)
- * - Verifica si los roles existen en la base de datos
- * - Si no existen, los crea automáticamente
- * - Hace lo mismo con los departamentos básicos
- *
- * ¿Por qué usar código en lugar de SQL?
- * - Los roles y departamentos son parte fundamental del sistema, no datos de prueba
- * - El código es versionable y mantenible
- * - Se ejecuta independientemente de la base de datos (H2, PostgreSQL, etc.)
- * - Evita errores de SQL duplicados o IDs inconsistentes
  */
 @Component
 public class DataInitializer implements CommandLineRunner {
 
-    private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     @Autowired
@@ -45,29 +30,14 @@ public class DataInitializer implements CommandLineRunner {
         initializeDepartments();
     }
 
-    /**
-     * Inicializa los 3 roles del sistema si no existen.
-     *
-     * Roles según el DER:
-     * 1. USER - Usuarios generales (alumnos y profesores) que reportan incidentes
-     * 2. MANAGER - Gerentes de departamento que gestionan incidentes
-     * 3. WORKER - Trabajadores que resuelven incidentes
-     */
     private void initializeRoles() {
-        // Verificar si ya existen roles
         if (roleRepository.count() > 0) {
-            logger.info("Roles ya inicializados ({} roles encontrados)", roleRepository.count());
-            return;
-        }
-
-        logger.info("Inicializando roles del sistema...");
             log.info("Roles ya inicializados ({} roles encontrados)", roleRepository.count());
             return;
         }
 
         log.info("Inicializando roles del sistema...");
 
-        // Crear los 3 roles (sin setear ID, que sea auto-generado)
         Role user = new Role();
         user.setRoleName("USER");
         roleRepository.save(user);
@@ -80,40 +50,20 @@ public class DataInitializer implements CommandLineRunner {
         worker.setRoleName("WORKER");
         roleRepository.save(worker);
 
-        logger.info("Roles inicializados: USER, MANAGER, WORKER");
         log.info("Roles inicializados: USER, MANAGER, WORKER");
     }
 
-    /**
-     * Inicializa los departamentos básicos del sistema si no existen.
-     *
-     * Departamentos comunes en instituciones educativas:
-     * - Mantenimiento
-     * - Redes
-     * - Infraestructura
-     * - Limpieza
-     *
-     * Nota: Los departamentos se crean sin manager asignado.
-     * Los managers se asignarán cuando los usuarios MANAGER se registren.
-     */
     private void initializeDepartments() {
-        // Verificar si ya existen departamentos
         if (departmentRepository.count() > 0) {
-            logger.info("Departamentos ya inicializados ({} departamentos encontrados)", departmentRepository.count());
-            return;
-        }
-
-        logger.info("Inicializando departamentos del sistema...");
             log.info("Departamentos ya inicializados ({} departamentos encontrados)", departmentRepository.count());
             return;
         }
 
         log.info("Inicializando departamentos del sistema...");
 
-        // Crear los departamentos básicos
         Department mantenimiento = new Department();
         mantenimiento.setName("Mantenimiento");
-        mantenimiento.setManager(null); // Sin manager asignado inicialmente
+        mantenimiento.setManager(null);
         departmentRepository.save(mantenimiento);
 
         Department redes = new Department();
@@ -131,7 +81,6 @@ public class DataInitializer implements CommandLineRunner {
         limpieza.setManager(null);
         departmentRepository.save(limpieza);
 
-        logger.info("Departamentos inicializados: Mantenimiento, Redes, Infraestructura, Limpieza");
         log.info("Departamentos inicializados: Mantenimiento, Redes, Infraestructura, Limpieza");
     }
 }
