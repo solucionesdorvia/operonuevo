@@ -58,14 +58,12 @@ public class DepartmentController {
      * @return Lista de DepartmentResponse
      */
     @GetMapping
-    @PreAuthorize("hasRole('MANAGER')")
     @Operation(
             summary = "Listar todos los departamentos",
-            description = "Retorna todos los departamentos del sistema con información del gerente asignado."
+            description = "Retorna todos los departamentos del sistema. Endpoint público para registro e incidentes."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente"),
-            @ApiResponse(responseCode = "403", description = "Acceso denegado - Solo MANAGER"),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     public ResponseEntity<List<DepartmentResponse>> getAllDepartments() {
@@ -89,14 +87,12 @@ public class DepartmentController {
      * @return DepartmentResponse con la información del departamento
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('MANAGER')")
     @Operation(
             summary = "Obtener departamento por ID",
-            description = "Retorna la información completa de un departamento específico por su ID."
+            description = "Retorna la información completa de un departamento. Endpoint público."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Departamento encontrado"),
-            @ApiResponse(responseCode = "403", description = "Acceso denegado - Solo MANAGER"),
             @ApiResponse(responseCode = "404", description = "Departamento no encontrado"),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
