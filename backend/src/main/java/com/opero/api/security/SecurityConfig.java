@@ -103,8 +103,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/incidents/{id}").authenticated()
                 // Actualizar incidente: USER, MANAGER (validación en service)
                 .requestMatchers(HttpMethod.PUT, "/api/incidents/{id}").hasAnyRole("USER", "MANAGER")
-                // Eliminar incidente: solo MANAGER
-                .requestMatchers(HttpMethod.DELETE, "/api/incidents/{id}").hasRole("MANAGER")
+                // Eliminar incidente: USER (propios), MANAGER (todos de su dept) - validación en service
+                .requestMatchers(HttpMethod.DELETE, "/api/incidents/{id}").hasAnyRole("USER", "MANAGER")
 
                 // Operaciones de gestión de incidentes: MANAGER y WORKER
                 .requestMatchers("/api/incidents/{id}/status").hasAnyRole("MANAGER", "WORKER")
