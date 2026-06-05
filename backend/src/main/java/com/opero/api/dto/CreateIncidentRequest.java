@@ -7,17 +7,18 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * DTO para crear un nuevo incidente.
  *
  * ¿Qué campos incluye?
- * - title: Título descriptivo del incidente
- * - description: Descripción detallada del problema
- * - locationDescription: Ubicación física donde ocurre el problema
+ * - title: Título descriptivo del incidente (REQUERIDO)
+ * - description: Descripción detallada del problema (REQUERIDO)
+ * - departmentId: ID del departamento al que se asigna el incidente (REQUERIDO)
+ * - locationDescription: (Opcional) Ubicación física donde ocurre el problema
  * - photoUrl: (Opcional) URL de la foto del incidente
- * - priority: Prioridad del incidente (LOW, MEDIUM, HIGH)
- * - departmentId: ID del departamento al que se asigna el incidente
- * - reporterId: ID del usuario que reporta el incidente
+ * - priority: (Opcional) Prioridad del incidente (LOW, MEDIUM, HIGH), por defecto MEDIUM
+ * - reporterId: (DEPRECADO) Se obtiene automáticamente del usuario autenticado vía JWT
  *
  * Campos que NO se incluyen (se generan automáticamente):
  * - id: Se genera automáticamente en la base de datos
  * - status: Se inicializa como PENDING
+ * - reporter: Se obtiene del usuario autenticado (JWT)
  * - worker: Se inicializa como null (sin asignar)
  * - createdAt: Se genera automáticamente
  * - updatedAt: Se genera automáticamente
@@ -31,19 +32,19 @@ public class CreateIncidentRequest {
     @Schema(description = "Descripción detallada del problema", example = "El AC del aula 301 no enciende", required = true)
     private String description;
 
-    @Schema(description = "Ubicación física donde ocurre el problema", example = "Aula 301, 3er piso", required = true)
+    @Schema(description = "Ubicación física donde ocurre el problema (opcional)", example = "Aula 301, 3er piso", required = false)
     private String locationDescription;
 
     @Schema(description = "URL de la foto del incidente (opcional)", example = "https://example.com/photo.jpg", required = false)
     private String photoUrl;
 
-    @Schema(description = "Prioridad del incidente", example = "HIGH", required = true, allowableValues = {"LOW", "MEDIUM", "HIGH"})
+    @Schema(description = "Prioridad del incidente (opcional, por defecto MEDIUM)", example = "HIGH", required = false, allowableValues = {"LOW", "MEDIUM", "HIGH"})
     private IncidentPriority priority;
 
     @Schema(description = "ID del departamento al que se asigna el incidente", example = "1", required = true)
     private Integer departmentId;
 
-    @Schema(description = "ID del usuario que reporta el incidente", example = "1", required = true)
+    @Schema(description = "ID del usuario que reporta el incidente (DEPRECADO: se obtiene del token JWT)", example = "1", required = false)
     private Integer reporterId;
 
     // Constructores

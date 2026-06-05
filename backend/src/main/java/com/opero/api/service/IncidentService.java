@@ -66,9 +66,10 @@ public class IncidentService {
      * Usado por: POST /api/incidents
      */
     public IncidentResponse createIncident(CreateIncidentRequest request) {
-        // 1. Validar que el reporter existe
-        User reporter = userRepository.findById(request.getReporterId())
-                .orElseThrow(() -> new RuntimeException("Reporter no encontrado con ID: " + request.getReporterId()));
+        // 1. Obtener el usuario autenticado del JWT como reporter
+        String currentUserEmail = SecurityUtil.getCurrentUserEmail();
+        User reporter = userRepository.findByEmailUade(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
 
         // 2. Validar que el department existe
         Department department = departmentRepository.findById(request.getDepartmentId())
@@ -78,9 +79,11 @@ public class IncidentService {
         Incident incident = new Incident();
         incident.setTitle(request.getTitle());
         incident.setDescription(request.getDescription());
-        incident.setLocationDescription(request.getLocationDescription());
+        // locationDescription es opcional, usar vacío si no se provee
+        incident.setLocationDescription(request.getLocationDescription() != null ? request.getLocationDescription() : "");
         incident.setPhotoUrl(request.getPhotoUrl());
-        incident.setPriority(request.getPriority());
+        // Si no se especifica prioridad, usar MEDIUM por defecto
+        incident.setPriority(request.getPriority() != null ? request.getPriority() : com.opero.api.entity.IncidentPriority.MEDIUM);
         incident.setStatus(IncidentStatus.PENDING); // Estado inicial
         incident.setReporter(reporter);
         incident.setDepartment(department);
