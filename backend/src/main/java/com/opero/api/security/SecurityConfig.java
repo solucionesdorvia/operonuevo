@@ -75,22 +75,15 @@ public class SecurityConfig {
 
             // Configurar reglas de autorización
             .authorizeHttpRequests(auth -> auth
-                // Endpoints PÚBLICOS (sin autenticación)
-                .requestMatchers(
-                    "/api/auth/login",       // Login
-                    "/api/auth/register",    // Registro
-                    "/api/ping",             // Health check
-                    "/api/departments",      // Lista de departamentos (necesario para registro)
-                    "/api/departments/**",   // Detalles de departamentos (necesario para crear incidentes)
-                    "/swagger-ui/**",        // Swagger UI
-                    "/swagger-ui.html",      // Swagger HTML
-                    "/v3/api-docs/**",       // OpenAPI docs
-                    "/api-docs/**",          // API docs (custom path)
-                    "/swagger-resources/**", // Swagger resources
-                    "/webjars/**",           // Webjars (Swagger dependencies)
-                    "/configuration/**",     // Swagger configuration
-                    "/h2-console/**"         // H2 Console (solo para desarrollo)
-                ).permitAll()
+                // Endpoints PÚBLICOS (sin autenticación) - DEBEN IR PRIMERO
+                .requestMatchers("/api/auth/login").permitAll()
+                .requestMatchers("/api/auth/register").permitAll()
+                .requestMatchers("/api/ping").permitAll()
+                .requestMatchers("/api/departments/**").permitAll() // Departamentos públicos (registro + crear incidentes)
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/v3/api-docs/**", "/api-docs/**").permitAll()
+                .requestMatchers("/swagger-resources/**", "/webjars/**", "/configuration/**").permitAll()
+                .requestMatchers("/h2-console/**").permitAll()
 
                 // Endpoints de AUTENTICACIÓN - Requieren autenticación
                 .requestMatchers("/api/auth/me").authenticated() // Ver datos del usuario autenticado
