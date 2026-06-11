@@ -374,20 +374,24 @@ public class IncidentService {
         Incident incident = incidentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Incidente no encontrado con ID: " + id));
 
-        // 2. Guardar el valor anterior para el historial
+        // 2. Obtener el usuario autenticado
+        String currentUserEmail = SecurityUtil.getCurrentUserEmail();
+        User currentUser = userRepository.findByEmailUade(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
+
+        // 3. Guardar el valor anterior para el historial
         String oldStatus = incident.getStatus().toString();
 
-        // 3. Actualizar el status
+        // 4. Actualizar el status
         incident.setStatus(request.getStatus());
 
-        // 4. Guardar
+        // 5. Guardar
         Incident updatedIncident = incidentRepository.save(incident);
 
-        // 5. Registrar cambio en el historial
-        // TODO: Obtener userId desde el token JWT en lugar de hardcodear
-        recordHistory(updatedIncident, "STATUS_CHANGE", oldStatus, request.getStatus().toString(), 3);
+        // 6. Registrar cambio en el historial
+        recordHistory(updatedIncident, "STATUS_CHANGE", oldStatus, request.getStatus().toString(), currentUser.getId());
 
-        // 6. Retornar
+        // 7. Retornar
         return convertToIncidentResponse(updatedIncident);
     }
 
@@ -417,23 +421,27 @@ public class IncidentService {
         User worker = userRepository.findById(request.getWorkerId())
                 .orElseThrow(() -> new RuntimeException("Trabajador no encontrado con ID: " + request.getWorkerId()));
 
-        // 3. Guardar el valor anterior para el historial
+        // 3. Obtener el usuario autenticado
+        String currentUserEmail = SecurityUtil.getCurrentUserEmail();
+        User currentUser = userRepository.findByEmailUade(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
+
+        // 4. Guardar el valor anterior para el historial
         String oldWorker = incident.getWorker() != null ? incident.getWorker().getFullName() : null;
 
-        // 4. Asignar el trabajador al incidente
+        // 5. Asignar el trabajador al incidente
         incident.setWorker(worker);
 
-        // 5. Opcional: Cambiar el status a ASSIGNED automáticamente
+        // 6. Opcional: Cambiar el status a ASSIGNED automáticamente
         incident.setStatus(IncidentStatus.ASSIGNED);
 
-        // 6. Guardar
+        // 7. Guardar
         Incident updatedIncident = incidentRepository.save(incident);
 
-        // 7. Registrar cambio en el historial
-        // TODO: Obtener userId desde el token JWT en lugar de hardcodear
-        recordHistory(updatedIncident, "WORKER_ASSIGNED", oldWorker, worker.getFullName(), 3);
+        // 8. Registrar cambio en el historial
+        recordHistory(updatedIncident, "WORKER_ASSIGNED", oldWorker, worker.getFullName(), currentUser.getId());
 
-        // 8. Retornar
+        // 9. Retornar
         return convertToIncidentResponse(updatedIncident);
     }
 
@@ -457,20 +465,24 @@ public class IncidentService {
         Incident incident = incidentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Incidente no encontrado con ID: " + id));
 
-        // 2. Guardar el valor anterior para el historial
+        // 2. Obtener el usuario autenticado
+        String currentUserEmail = SecurityUtil.getCurrentUserEmail();
+        User currentUser = userRepository.findByEmailUade(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
+
+        // 3. Guardar el valor anterior para el historial
         String oldPriority = incident.getPriority().toString();
 
-        // 3. Actualizar la prioridad
+        // 4. Actualizar la prioridad
         incident.setPriority(request.getPriority());
 
-        // 4. Guardar
+        // 5. Guardar
         Incident updatedIncident = incidentRepository.save(incident);
 
-        // 5. Registrar cambio en el historial
-        // TODO: Obtener userId desde el token JWT en lugar de hardcodear
-        recordHistory(updatedIncident, "PRIORITY_CHANGE", oldPriority, request.getPriority().toString(), 3);
+        // 6. Registrar cambio en el historial
+        recordHistory(updatedIncident, "PRIORITY_CHANGE", oldPriority, request.getPriority().toString(), currentUser.getId());
 
-        // 6. Retornar
+        // 7. Retornar
         return convertToIncidentResponse(updatedIncident);
     }
 
@@ -500,26 +512,30 @@ public class IncidentService {
         Department newDepartment = departmentRepository.findById(request.getDepartmentId())
                 .orElseThrow(() -> new RuntimeException("Departamento no encontrado con ID: " + request.getDepartmentId()));
 
-        // 3. Guardar el valor anterior para el historial
+        // 3. Obtener el usuario autenticado
+        String currentUserEmail = SecurityUtil.getCurrentUserEmail();
+        User currentUser = userRepository.findByEmailUade(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
+
+        // 4. Guardar el valor anterior para el historial
         String oldDepartment = incident.getDepartment().getName();
 
-        // 4. Cambiar el departamento
+        // 5. Cambiar el departamento
         incident.setDepartment(newDepartment);
 
-        // 5. Desasignar el trabajador (el nuevo departamento debe asignar uno de su equipo)
+        // 6. Desasignar el trabajador (el nuevo departamento debe asignar uno de su equipo)
         incident.setWorker(null);
 
-        // 6. Cambiar el status a PENDING_ASSIGNMENT
+        // 7. Cambiar el status a PENDING_ASSIGNMENT
         incident.setStatus(IncidentStatus.PENDING_ASSIGNMENT);
 
-        // 7. Guardar
+        // 8. Guardar
         Incident updatedIncident = incidentRepository.save(incident);
 
-        // 8. Registrar cambio en el historial
-        // TODO: Obtener userId desde el token JWT en lugar de hardcodear
-        recordHistory(updatedIncident, "DEPARTMENT_CHANGE", oldDepartment, newDepartment.getName(), 3);
+        // 9. Registrar cambio en el historial
+        recordHistory(updatedIncident, "DEPARTMENT_CHANGE", oldDepartment, newDepartment.getName(), currentUser.getId());
 
-        // 9. Retornar
+        // 10. Retornar
         return convertToIncidentResponse(updatedIncident);
     }
 
