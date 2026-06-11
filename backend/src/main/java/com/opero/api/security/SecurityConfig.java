@@ -80,6 +80,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/register").permitAll()
                 .requestMatchers("/api/ping").permitAll()
                 .requestMatchers("/api/departments/**").permitAll() // Departamentos públicos (registro + crear incidentes)
+                .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll() // Imágenes públicas (GET)
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/api-docs/**").permitAll()
                 .requestMatchers("/swagger-resources/**", "/webjars/**", "/configuration/**").permitAll()
@@ -112,6 +113,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/incidents/{id}/priority").hasRole("MANAGER")
                 .requestMatchers("/api/incidents/{id}/department").hasRole("MANAGER")
                 .requestMatchers("/api/incidents/{id}/accept").hasRole("MANAGER")
+
+                // Endpoints de ARCHIVOS - Upload requiere autenticación
+                .requestMatchers(HttpMethod.POST, "/api/files/upload").authenticated()
 
                 // Cualquier otro endpoint requiere autenticación
                 .anyRequest().authenticated()
