@@ -55,6 +55,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
+        // Skip JWT validation for public endpoints
+        String path = request.getRequestURI();
+        if (path.startsWith("/api/files/") ||
+            path.startsWith("/api/departments") ||
+            path.equals("/api/auth/login") ||
+            path.equals("/api/auth/register") ||
+            path.equals("/api/ping")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             // 1. Obtener el header Authorization
             String authorizationHeader = request.getHeader("Authorization");
