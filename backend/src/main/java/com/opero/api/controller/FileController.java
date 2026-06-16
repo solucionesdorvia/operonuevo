@@ -1,135 +1,91 @@
 package com.opero.api.controller;
 
+import com.opero.api.service.CloudinaryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Controller para manejo de archivos (upload de imágenes).
+ *
+ * ¿Qué hace este Controller?
+ * - Expone endpoints para subir imágenes a Cloudinary
+ * - Valida que los archivos sean imágenes
+ * - Retorna URLs públicas de las imágenes
+ *
+ * Cambios vs versión anterior:
+ * - ANTES: Guardaba imágenes en filesystem local (no persistente en Railway)
+ * - AHORA: Guarda imágenes en Cloudinary (persistente, con CDN)
  */
 @RestController
 @RequestMapping("/api/files")
 @Tag(name = "File Management", description = "Endpoints para gestión de archivos")
 public class FileController {
 
-    // Directorio donde se guardarán las imágenes
-    private static final String UPLOAD_DIR = "uploads/images/";
-
-    @Value("${app.base-url:https://backend-opero-production.up.railway.app}")
-    private String baseUrl;
+    @Autowired
+    private CloudinaryService cloudinaryService;
 
     /**
-     * Upload de imagen.
+     * Upload de imagen a Cloudinary.
      *
-     * @param file Archivo de imagen
-     * @return URL pública de la imagen subida
+     * ¿Qué hace este endpoint?
+     * - Recibe un archivo de imagen desde el frontend
+     * - Delega la validación y subida a CloudinaryService
+     * - Retorna la URL pública de Cloudinary
+     *
+     * @param file Archivo de imagen (desde FormData del frontend)
+     * @return JSON con {url: "https://...", filename: "..."}
      */
     @PostMapping("/upload")
     @Operation(
-            summary = "Subir imagen",
-            description = "Sube una imagen al servidor y retorna la URL pública de acceso"
+            summary = "Subir imagen a Cloudinary",
+            description = "Sube una imagen a Cloudinary y retorna la URL pública. " +
+                          "La imagen se almacena de forma persistente en la nube, " +
+                          "a diferencia del filesystem local que es efímero en Railway."
     )
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
-            // Validar que sea una imagen
-            String contentType = file.getContentType();
-            if (contentType == null || !contentType.startsWith("image/")) {
-                Map<String, String> error = new HashMap<>();
-                error.put("error", "El archivo debe ser una imagen");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-            }
+            // Subir a Cloudinary (valida formato y tamaño internamente)
+            String imageUrl = cloudinaryService.uploadImage(file);
 
-            // Validar tamaño (max 10MB)
-            if (file.getSize() > 10 * 1024 * 1024) {
-                Map<String, String> error = new HashMap<>();
-                error.put("error", "La imagen no puede superar los 10MB");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-            }
+            // Extraer el nombre del archivo de la URL de Cloudinary
+            String filename = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
 
-            // Crear directorio si no existe
-            Path uploadPath = Paths.get(UPLOAD_DIR);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            // Generar nombre único para el archivo
-            String originalFilename = file.getOriginalFilename();
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
-            String filename = UUID.randomUUID().toString() + extension;
-
-            // Guardar archivo
-            Path filePath = uploadPath.resolve(filename);
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-            // Construir URL pública
-            String fileUrl = baseUrl + "/api/files/" + filename;
-
+            // Retornar respuesta
             Map<String, String> response = new HashMap<>();
-            response.put("url", fileUrl);
+            response.put("url", imageUrl);
             response.put("filename", filename);
 
             return ResponseEntity.ok(response);
 
-        } catch (IOException e) {
+        } catch (IllegalArgumentException e) {
+            // Error de validación (no es imagen, tamaño excedido)
             Map<String, String> error = new HashMap<>();
-            error.put("error", "Error al guardar el archivo: " + e.getMessage());
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+
+        } catch (IOException e) {
+            // Error al subir a Cloudinary
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Error al subir la imagen: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
     /**
-     * Servir imagen.
+     * NOTA: Endpoint GET /{filename} eliminado.
      *
-     * @param filename Nombre del archivo
-     * @return Bytes de la imagen
+     * Ya no es necesario servir imágenes desde el servidor porque:
+     * - Cloudinary proporciona URLs directas con CDN global
+     * - El frontend carga las imágenes directamente desde Cloudinary
+     * - Ejemplo: https://res.cloudinary.com/demo/image/upload/v1234/opero/incidents/abc.jpg
      */
-    @GetMapping("/{filename}")
-    @Operation(
-            summary = "Obtener imagen",
-            description = "Retorna una imagen previamente subida"
-    )
-    public ResponseEntity<byte[]> getFile(@PathVariable String filename) {
-        try {
-            Path filePath = Paths.get(UPLOAD_DIR).resolve(filename);
-
-            if (!Files.exists(filePath)) {
-                return ResponseEntity.notFound().build();
-            }
-
-            byte[] fileContent = Files.readAllBytes(filePath);
-
-            // Determinar content type basado en extensión
-            String contentType = "image/jpeg";
-            if (filename.toLowerCase().endsWith(".png")) {
-                contentType = "image/png";
-            } else if (filename.toLowerCase().endsWith(".gif")) {
-                contentType = "image/gif";
-            } else if (filename.toLowerCase().endsWith(".webp")) {
-                contentType = "image/webp";
-            }
-
-            return ResponseEntity.ok()
-                    .header("Content-Type", contentType)
-                    .body(fileContent);
-
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
 }
