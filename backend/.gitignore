@@ -35,3 +35,6 @@ build/
 # Environment files
 .env
 src/main/resources/application-dev.properties
+
+# Imágenes subidas en runtime (no versionar)
+uploads/
