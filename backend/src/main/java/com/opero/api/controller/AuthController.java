@@ -108,8 +108,10 @@ public class AuthController {
             // Retornar respuesta exitosa con código 200 OK
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            // Si falla, retornar error 401 Unauthorized con el mensaje de error
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+            // Retornar error 401 Unauthorized con mensaje en formato JSON
+            java.util.Map<String, String> errorResponse = new java.util.HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
         }
     }
 
@@ -171,8 +173,10 @@ public class AuthController {
             // Retornar respuesta exitosa con código 200 OK
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            // Si falla, retornar error 400 Bad Request con el mensaje de error
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            // Retornar error 400 Bad Request con mensaje en formato JSON
+            java.util.Map<String, String> errorResponse = new java.util.HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
         }
     }
 
