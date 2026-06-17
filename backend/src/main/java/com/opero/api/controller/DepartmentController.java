@@ -72,6 +72,33 @@ public class DepartmentController {
     }
 
     /**
+     * Crear un nuevo departamento.
+     *
+     * Solo MANAGER puede usar este endpoint. Recibe { name, managerId? } y
+     * crea el departamento. Si se pasa managerId, valida que el usuario exista
+     * y lo asigna como manager.
+     *
+     * Usado por: la pantalla "Departamentos" del rol Manager.
+     */
+    @PostMapping
+    @PreAuthorize("hasRole('MANAGER')")
+    @Operation(
+            summary = "Crear un nuevo departamento",
+            description = "Crea un departamento con nombre (obligatorio) y manager (opcional). " +
+                    "Solo MANAGER puede llamar este endpoint."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Departamento creado"),
+            @ApiResponse(responseCode = "400", description = "Datos invalidos"),
+            @ApiResponse(responseCode = "403", description = "Acceso denegado - Solo MANAGER"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    public ResponseEntity<DepartmentResponse> createDepartment(@RequestBody DepartmentUpdateRequest request) {
+        DepartmentResponse created = departmentService.createDepartment(request);
+        return ResponseEntity.ok(created);
+    }
+
+    /**
      * Obtener un departamento específico por ID.
      *
      * ¿Qué hace este endpoint?

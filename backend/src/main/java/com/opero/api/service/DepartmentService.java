@@ -97,6 +97,34 @@ public class DepartmentService {
      * Nota sobre seguridad:
      * - Solo administradores o gerentes deberían poder actualizar departamentos
      */
+    /**
+     * Crear un nuevo departamento.
+     *
+     * Usado por: POST /api/departments (rol MANAGER).
+     *
+     * @param request Datos del nuevo departamento (name requerido, managerId opcional)
+     * @return DepartmentResponse con el departamento creado
+     * @throws RuntimeException si falta el name o el manager no existe
+     */
+    public DepartmentResponse createDepartment(DepartmentUpdateRequest request) {
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            throw new RuntimeException("El nombre del departamento es obligatorio");
+        }
+
+        Department department = new Department();
+        department.setName(request.getName().trim());
+
+        if (request.getManagerId() != null) {
+            User manager = userRepository.findById(request.getManagerId())
+                    .orElseThrow(() -> new RuntimeException(
+                            "Usuario no encontrado con ID: " + request.getManagerId()));
+            department.setManager(manager);
+        }
+
+        Department saved = departmentRepository.save(department);
+        return convertToDepartmentResponse(saved);
+    }
+
     public DepartmentResponse updateDepartment(Integer id, DepartmentUpdateRequest request) {
         // 1. Buscar el departamento existente
         Department department = departmentRepository.findById(id)
