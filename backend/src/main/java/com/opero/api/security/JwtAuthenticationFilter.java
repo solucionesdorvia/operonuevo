@@ -55,10 +55,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        // Skip JWT validation for public endpoints
+        // Skip JWT validation for public endpoints.
+        // OJO: /api/departments solo es publico para GET (lo usa el Register sin token).
+        // POST/PUT necesitan pasar por el filtro para que @PreAuthorize('hasRole(MANAGER)')
+        // funcione — sin esto cualquier endpoint protegido de departments tira 401.
         String path = request.getRequestURI();
+        String method = request.getMethod();
+        boolean isPublicDepartmentRead = path.startsWith("/api/departments") && "GET".equals(method);
         if (path.startsWith("/api/files/") ||
-            path.startsWith("/api/departments") ||
+            isPublicDepartmentRead ||
             path.equals("/api/auth/login") ||
             path.equals("/api/auth/register") ||
             path.equals("/api/ping")) {
