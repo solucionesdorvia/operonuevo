@@ -256,8 +256,12 @@ public class IncidentService {
         if (request.getLocationDescription() != null) {
             incident.setLocationDescription(request.getLocationDescription());
         }
+        // Para photoUrl: permitir null o vacío para eliminar la foto
+        // Solo ignorar si el DTO no incluye el campo (viene como null del JSON)
+        // Si viene explícitamente como "", lo aceptamos para borrar
         if (request.getPhotoUrl() != null) {
-            incident.setPhotoUrl(request.getPhotoUrl());
+            // Si es string vacío, guardamos null en la BD (equivale a "sin foto")
+            incident.setPhotoUrl(request.getPhotoUrl().isEmpty() ? null : request.getPhotoUrl());
         }
 
         // 3. Guardar los cambios (updatedAt se actualiza automáticamente con @PreUpdate)
