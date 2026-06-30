@@ -74,13 +74,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             // 1. Obtener el header Authorization (case-insensitive para HTTP/2)
             String authorizationHeader = null;
+            StringBuilder allHeaders = new StringBuilder();
             java.util.Enumeration<String> headerNames = request.getHeaderNames();
             while (headerNames.hasMoreElements()) {
                 String headerName = headerNames.nextElement();
+                allHeaders.append(headerName).append(":").append(request.getHeader(headerName)).append("; ");
                 if ("authorization".equalsIgnoreCase(headerName)) {
                     authorizationHeader = request.getHeader(headerName);
-                    break;
                 }
+            }
+
+            // Debug: si no hay auth header, guardar todos los headers para debugging
+            if (authorizationHeader == null) {
+                request.setAttribute("jwt_error", "No Authorization header found. All headers: " + allHeaders.toString());
             }
 
             String email = null;
