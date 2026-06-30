@@ -56,4 +56,18 @@ public interface UserRepository extends JpaRepository<User, Integer> {
      * SELECT COUNT(*) > 0 FROM users WHERE email_uade = ?
      */
     boolean existsByEmailUade(String emailUade);
+
+    /**
+     * Cuenta cuántos usuarios pertenecen a un departamento específico.
+     *
+     * @param departmentId ID del departamento
+     * @return Cantidad de usuarios en el departamento
+     *
+     * Usado por:
+     * - DELETE /api/departments/{id} (para validar que no tenga usuarios antes de eliminar)
+     *
+     * Nota: Spring Data JPA genera automáticamente la query:
+     * SELECT COUNT(*) FROM users WHERE department_id = ?
+     */
+    long countByDepartmentId(Integer departmentId);
 }

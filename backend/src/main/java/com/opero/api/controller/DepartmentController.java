@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -169,5 +170,39 @@ public class DepartmentController {
     ) {
         DepartmentResponse updatedDepartment = departmentService.updateDepartment(id, request);
         return ResponseEntity.ok(updatedDepartment);
+    }
+
+    /**
+     * Eliminar un departamento.
+     *
+     * ¿Qué hace este endpoint?
+     * - Elimina un departamento por su ID
+     * - Solo MANAGER puede usar este endpoint
+     * - Valida que no haya incidencias asociadas al departamento
+     *
+     * @param id ID del departamento a eliminar
+     * @return Mensaje de confirmación
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
+    @Operation(
+            summary = "Eliminar departamento",
+            description = "Elimina un departamento del sistema. Solo MANAGER puede usar este endpoint."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Departamento eliminado exitosamente"),
+            @ApiResponse(responseCode = "400", description = "El departamento tiene incidencias asociadas"),
+            @ApiResponse(responseCode = "403", description = "Acceso denegado - Solo MANAGER"),
+            @ApiResponse(responseCode = "404", description = "Departamento no encontrado"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    public ResponseEntity<?> deleteDepartment(
+            @Parameter(description = "ID del departamento a eliminar", required = true)
+            @PathVariable Integer id
+    ) {
+        departmentService.deleteDepartment(id);
+        return ResponseEntity.ok().body(new java.util.HashMap<String, String>() {{
+            put("message", "Departamento eliminado exitosamente");
+        }});
     }
 }
