@@ -103,29 +103,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 3. Si tenemos email Y no hay autenticación previa en el contexto de Spring Security
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                // 4. Cargar los detalles del usuario desde la base de datos
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                try {
+                    // 4. Cargar los detalles del usuario desde la base de datos
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-                // 5. Validar el token
-                if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
+                    // 5. Validar el token
+                    if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
 
-                    // 6. Crear objeto de autenticación de Spring Security
-                    UsernamePasswordAuthenticationToken authenticationToken =
-                            new UsernamePasswordAuthenticationToken(
-                                    userDetails,        // Principal (usuario autenticado)
-                                    null,               // Credentials (ya validamos con JWT, no necesitamos password)
-                                    userDetails.getAuthorities() // Authorities (roles)
-                            );
+                        // 6. Crear objeto de autenticación de Spring Security
+                        UsernamePasswordAuthenticationToken authenticationToken =
+                                new UsernamePasswordAuthenticationToken(
+                                        userDetails,        // Principal (usuario autenticado)
+                                        null,               // Credentials (ya validamos con JWT, no necesitamos password)
+                                        userDetails.getAuthorities() // Authorities (roles)
+                                );
 
-                    // Agregar detalles de la request (IP, sesión, etc.)
-                    authenticationToken.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
+                        // Agregar detalles de la request (IP, sesión, etc.)
+                        authenticationToken.setDetails(
+                                new WebAuthenticationDetailsSource().buildDetails(request)
+                        );
 
-                    // 7. Configurar la autenticación en el contexto de Spring Security
-                    // A partir de este punto, el usuario está autenticado para este request
-                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                        // 7. Configurar la autenticación en el contexto de Spring Security
+                        // A partir de este punto, el usuario está autenticado para este request
+                        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                    } else {
+                        request.setAttribute("jwt_error", "Token validation failed for user: " + email);
+                    }
+                } catch (Exception innerEx) {
+                    request.setAttribute("jwt_error", "Error loading user or validating token: " + innerEx.getMessage());
                 }
+            } else if (email == null && authorizationHeader != null) {
+                request.setAttribute("jwt_error", "Failed to extract email from token");
             }
         } catch (Exception e) {
             // Si hay algún error (token inválido, expirado, etc.), simplemente continuar
