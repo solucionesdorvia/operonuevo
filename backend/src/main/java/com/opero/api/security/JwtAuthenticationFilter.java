@@ -72,9 +72,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            // 1. Obtener el header Authorization
+            // 1. Obtener el header Authorization (intentar ambos casos por compatibilidad)
             String authorizationHeader = request.getHeader("Authorization");
-            logger.info("JWT Filter - Path: " + path + " Method: " + method + " Auth header: " + (authorizationHeader != null ? "EXISTS" : "NULL"));
+            if (authorizationHeader == null) {
+                authorizationHeader = request.getHeader("authorization");
+            }
 
             String email = null;
             String jwt = null;
@@ -85,9 +87,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 jwt = authorizationHeader.substring(7);
                 // Extraer el email del token
                 email = jwtUtil.extractEmail(jwt);
-                logger.info("JWT Filter - Token extraído, email: " + email);
-            } else {
-                logger.warn("JWT Filter - Authorization header inválido o inexistente");
             }
 
             // 3. Si tenemos email Y no hay autenticación previa en el contexto de Spring Security
