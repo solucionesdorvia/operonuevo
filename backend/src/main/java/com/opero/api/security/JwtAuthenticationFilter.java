@@ -96,6 +96,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
                 // Extraer el token (quitando el prefijo "Bearer ")
                 jwt = authorizationHeader.substring(7);
+                // Eliminar espacios en blanco que puedan existir (JWT no debe tenerlos)
+                jwt = jwt.replaceAll("\\s+", "");
                 // Extraer el email del token
                 email = jwtUtil.extractEmail(jwt);
             }
