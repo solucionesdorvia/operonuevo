@@ -72,10 +72,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            // 1. Obtener el header Authorization (intentar ambos casos por compatibilidad)
-            String authorizationHeader = request.getHeader("Authorization");
-            if (authorizationHeader == null) {
-                authorizationHeader = request.getHeader("authorization");
+            // 1. Obtener el header Authorization (case-insensitive para HTTP/2)
+            String authorizationHeader = null;
+            java.util.Enumeration<String> headerNames = request.getHeaderNames();
+            while (headerNames.hasMoreElements()) {
+                String headerName = headerNames.nextElement();
+                if ("authorization".equalsIgnoreCase(headerName)) {
+                    authorizationHeader = request.getHeader(headerName);
+                    break;
+                }
             }
 
             String email = null;
