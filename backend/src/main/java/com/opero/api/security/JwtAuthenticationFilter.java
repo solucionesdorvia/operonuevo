@@ -119,7 +119,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (Exception e) {
             // Si hay algún error (token inválido, expirado, etc.), simplemente continuar
             // Spring Security manejará la falta de autenticación retornando 401
-            logger.error("Error en autenticación JWT: " + e.getMessage());
+            logger.error("Error en autenticación JWT: " + e.getMessage(), e);
+            // Agregar atributo al request para debugging
+            request.setAttribute("jwt_error", e.getMessage());
         }
 
         // 8. Continuar con la cadena de filtros (pasar al siguiente filtro o al controller)

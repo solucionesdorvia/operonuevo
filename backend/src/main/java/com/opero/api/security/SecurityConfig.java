@@ -134,7 +134,9 @@ public class SecurityConfig {
                 .authenticationEntryPoint((request, response, authException) -> {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
-                    response.getWriter().write("{\"error\":\"No autenticado\",\"message\":\"" + authException.getMessage() + "\"}");
+                    String jwtError = (String) request.getAttribute("jwt_error");
+                    String errorDetail = jwtError != null ? jwtError : authException.getMessage();
+                    response.getWriter().write("{\"error\":\"No autenticado\",\"message\":\"" + errorDetail + "\"}");
                 })
                 // Cuando hay autenticación pero no tiene permisos → 403 Forbidden
                 .accessDeniedHandler((request, response, accessDeniedException) -> {
