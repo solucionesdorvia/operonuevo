@@ -200,9 +200,16 @@ public class DepartmentController {
             @Parameter(description = "ID del departamento a eliminar", required = true)
             @PathVariable Integer id
     ) {
-        departmentService.deleteDepartment(id);
-        return ResponseEntity.ok().body(new java.util.HashMap<String, String>() {{
-            put("message", "Departamento eliminado exitosamente");
-        }});
+        try {
+            departmentService.deleteDepartment(id);
+            return ResponseEntity.ok().body(new java.util.HashMap<String, String>() {{
+                put("message", "Departamento eliminado exitosamente");
+            }});
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new java.util.HashMap<String, String>() {{
+                put("error", "No se puede eliminar");
+                put("message", e.getMessage());
+            }});
+        }
     }
 }

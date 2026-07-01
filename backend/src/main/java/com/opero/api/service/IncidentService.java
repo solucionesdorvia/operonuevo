@@ -160,7 +160,7 @@ public class IncidentService {
      * - Aplica filtros automáticos según el rol del usuario autenticado:
      *   * USER: Solo ve sus propios incidentes (que reportaron)
      *   * WORKER: Ve solo incidentes asignados a él
-     *   * MANAGER: Ve todos los incidentes de su departamento
+     *   * MANAGER: Ve TODOS los incidentes (sin filtro de departamento)
      * - Aplica filtros opcionales adicionales si se proporcionan
      * - Convierte cada Incident a IncidentResponse
      *
@@ -175,7 +175,7 @@ public class IncidentService {
      * Reglas de autorización:
      * - USER: Solo ven incidentes que ellos crearon
      * - WORKER: Solo ve incidentes asignados a él
-     * - MANAGER: Ve todos los incidentes de su departamento
+     * - MANAGER: Ve TODOS los incidentes (puede asignar a cualquier departamento)
      */
     public List<IncidentResponse> getAllIncidents(IncidentStatus status, Integer reporterId,
                                                    Integer workerId, Integer departmentId) {
@@ -203,9 +203,8 @@ public class IncidentService {
                             return incident.getWorker() != null &&
                                    incident.getWorker().getId().equals(currentUser.getId());
                         case "MANAGER":
-                            // Puede ver todos los incidentes de su departamento
-                            return currentUser.getDepartment() != null &&
-                                   incident.getDepartment().getId().equals(currentUser.getDepartment().getId());
+                            // Puede ver TODOS los incidentes (sin filtro de departamento)
+                            return true;
                         default:
                             return false; // Por seguridad, si no tiene rol conocido, no ve nada
                     }
