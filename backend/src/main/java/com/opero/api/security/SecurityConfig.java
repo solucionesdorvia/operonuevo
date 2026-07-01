@@ -79,7 +79,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/login").permitAll()
                 .requestMatchers("/api/auth/register").permitAll()
                 .requestMatchers("/api/ping").permitAll()
-                .requestMatchers("/api/departments/**").permitAll() // Departamentos públicos (registro + crear incidentes)
+                // Departamentos: GET público (para registro), POST/PUT/DELETE requieren MANAGER
+                .requestMatchers(HttpMethod.GET, "/api/departments/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/departments/**").hasRole("MANAGER")
+                .requestMatchers(HttpMethod.PUT, "/api/departments/**").hasRole("MANAGER")
+                .requestMatchers(HttpMethod.DELETE, "/api/departments/**").hasRole("MANAGER")
                 .requestMatchers("/api/files/**").permitAll() // Archivos públicos (upload y GET)
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/api-docs/**").permitAll()
@@ -130,7 +134,9 @@ public class SecurityConfig {
                 .authenticationEntryPoint((request, response, authException) -> {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
-                    response.getWriter().write("{\"error\":\"No autenticado\",\"message\":\"" + authException.getMessage() + "\"}");
+                    String jwtError = (String) request.getAttribute("jwt_error");
+                    String errorDetail = jwtError != null ? jwtError : authException.getMessage();
+                    response.getWriter().write("{\"error\":\"No autenticado\",\"message\":\"" + errorDetail + "\"}");
                 })
                 // Cuando hay autenticación pero no tiene permisos → 403 Forbidden
                 .accessDeniedHandler((request, response, accessDeniedException) -> {

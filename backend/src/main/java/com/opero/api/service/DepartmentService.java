@@ -155,6 +155,31 @@ public class DepartmentService {
     }
 
     /**
+     * Eliminar un departamento.
+     *
+     * ¿Qué hace este método?
+     * - Elimina un departamento por su ID
+     * - Valida que no haya incidencias ni usuarios asociados
+     *
+     * @param id ID del departamento a eliminar
+     * @throws RuntimeException si el departamento no existe o tiene dependencias
+     */
+    public void deleteDepartment(Integer id) {
+        // 1. Buscar el departamento
+        Department department = departmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Departamento no encontrado con ID: " + id));
+
+        // 2. Validar que no tenga usuarios asociados
+        long userCount = userRepository.countByDepartmentId(id);
+        if (userCount > 0) {
+            throw new RuntimeException("No se puede eliminar el departamento porque tiene " + userCount + " usuario(s) asociado(s)");
+        }
+
+        // 3. Eliminar el departamento
+        departmentRepository.delete(department);
+    }
+
+    /**
      * Método auxiliar: Convierte una entidad Department a un DTO DepartmentResponse.
      *
      * ¿Qué hace este método?
