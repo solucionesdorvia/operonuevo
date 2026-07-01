@@ -8,6 +8,7 @@ import com.opero.api.repository.DepartmentRepository;
 import com.opero.api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -106,6 +107,7 @@ public class DepartmentService {
      * @return DepartmentResponse con el departamento creado
      * @throws RuntimeException si falta el name o el manager no existe
      */
+    @Transactional
     public DepartmentResponse createDepartment(DepartmentUpdateRequest request) {
         if (request.getName() == null || request.getName().trim().isEmpty()) {
             throw new RuntimeException("El nombre del departamento es obligatorio");
@@ -125,6 +127,7 @@ public class DepartmentService {
         return convertToDepartmentResponse(saved);
     }
 
+    @Transactional
     public DepartmentResponse updateDepartment(Integer id, DepartmentUpdateRequest request) {
         // 1. Buscar el departamento existente
         Department department = departmentRepository.findById(id)

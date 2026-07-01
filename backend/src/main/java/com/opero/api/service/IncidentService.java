@@ -20,6 +20,7 @@ import com.opero.api.repository.UserRepository;
 import com.opero.api.security.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -65,6 +66,7 @@ public class IncidentService {
      *
      * Usado por: POST /api/incidents
      */
+    @Transactional
     public IncidentResponse createIncident(CreateIncidentRequest request) {
         // 1. Obtener el usuario autenticado del JWT como reporter
         String currentUserEmail = SecurityUtil.getCurrentUserEmail();
@@ -241,6 +243,7 @@ public class IncidentService {
      *
      * Usado por: PUT /api/incidents/{id}
      */
+    @Transactional
     public IncidentResponse updateIncident(Integer id, UpdateIncidentRequest request) {
         // 1. Buscar el incidente existente
         Incident incident = incidentRepository.findById(id)
@@ -280,6 +283,7 @@ public class IncidentService {
      *
      * Usado por: DELETE /api/incidents/{id}
      */
+    @Transactional
     public void deleteIncident(Integer id) {
         // 1. Buscar el incidente
         Incident incident = incidentRepository.findById(id)
@@ -321,6 +325,7 @@ public class IncidentService {
      *
      * Usado por: PATCH /api/incidents/{id}/accept
      */
+    @Transactional
     public IncidentResponse acceptIncident(Integer id) {
         // 1. Buscar el incidente
         Incident incident = incidentRepository.findById(id)
@@ -369,6 +374,7 @@ public class IncidentService {
      *
      * Usado por: PATCH /api/incidents/{id}/status
      */
+    @Transactional
     public IncidentResponse updateStatus(Integer id, UpdateStatusRequest request) {
         // 1. Buscar el incidente
         Incident incident = incidentRepository.findById(id)
@@ -412,6 +418,7 @@ public class IncidentService {
      *
      * Usado por: PATCH /api/incidents/{id}/assign
      */
+    @Transactional
     public IncidentResponse assignWorker(Integer id, AssignWorkerRequest request) {
         // 1. Buscar el incidente
         Incident incident = incidentRepository.findById(id)
@@ -460,6 +467,7 @@ public class IncidentService {
      *
      * Usado por: PATCH /api/incidents/{id}/priority
      */
+    @Transactional
     public IncidentResponse updatePriority(Integer id, UpdatePriorityRequest request) {
         // 1. Buscar el incidente
         Incident incident = incidentRepository.findById(id)
@@ -503,6 +511,7 @@ public class IncidentService {
      *
      * Usado por: PATCH /api/incidents/{id}/department
      */
+    @Transactional
     public IncidentResponse updateDepartment(Integer id, UpdateDepartmentRequest request) {
         // 1. Buscar el incidente
         Incident incident = incidentRepository.findById(id)

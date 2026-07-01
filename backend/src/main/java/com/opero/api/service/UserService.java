@@ -11,6 +11,7 @@ import com.opero.api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -136,6 +137,7 @@ public class UserService {
      * - El controller debe validar que un usuario normal solo pueda actualizar su propio perfil
      * - Solo administradores deberían poder cambiar roleId y departmentId de otros usuarios
      */
+    @Transactional
     public UserResponse updateUser(Integer id, UpdateUserRequest request) {
         // 1. Buscar el usuario existente
         User user = userRepository.findById(id)
@@ -204,6 +206,7 @@ public class UserService {
      * - No se puede eliminar un usuario que reportó incidentes
      * - No se puede eliminar un usuario que tiene incidentes asignados
      */
+    @Transactional
     public void deleteUser(Integer id) {
         // 1. Buscar el usuario (esto también verifica que existe)
         User user = userRepository.findById(id)
@@ -271,6 +274,7 @@ public class UserService {
      *
      * Usado por: PUT /api/users/me
      */
+    @Transactional
     public UserResponse updateUserByEmail(String email, UpdateUserRequest request) {
         // 1. Buscar el usuario existente
         User user = userRepository.findByEmailUade(email)

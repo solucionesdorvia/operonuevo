@@ -14,6 +14,7 @@ import com.opero.api.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -113,7 +114,14 @@ public class AuthService {
      * @throws RuntimeException si el email ya existe, el rol no existe, o el departamento no existe
      *
      * Usado por: POST /api/auth/register
+     *
+     * @Transactional: el guardado del usuario, la generación del token y el
+     * mapeo a DTO ocurren en UNA sola transacción. Antes, sin esto, el save()
+     * commiteaba al toque y si algo fallaba después (o se cortaba la conexión)
+     * el usuario quedaba creado igual -> por eso el 2º intento decía "email ya
+     * registrado". Ahora es todo-o-nada.
      */
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         // 1. Validar que el email no esté duplicado
         if (userRepository.existsByEmailUade(request.getEmailUade())) {
